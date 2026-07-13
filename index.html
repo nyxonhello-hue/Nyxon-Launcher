@@ -1,0 +1,2908 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Nyxon — Automation Launcher</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+/* ── Theme ── */
+:root {
+  --transition: 0.22s ease;
+  --sidebar-w: 230px;
+}
+
+[data-theme="dark"] {
+  --bg:        #07070f;
+  --surface:   rgba(255,255,255,0.04);
+  --surface2:  rgba(255,255,255,0.07);
+  --border:    rgba(255,255,255,0.08);
+  --border2:   rgba(255,255,255,0.14);
+  --text:      #f0f0ff;
+  --text2:     rgba(240,240,255,0.6);
+  --text3:     rgba(240,240,255,0.3);
+  --shadow:    0 8px 32px rgba(0,0,0,0.5);
+  --shadow-lg: 0 16px 56px rgba(0,0,0,0.7);
+  --glow:      rgba(139,92,246,0.15);
+}
+
+[data-theme="light"] {
+  --bg:        #f0eeff;
+  --surface:   rgba(255,255,255,0.7);
+  --surface2:  rgba(255,255,255,0.9);
+  --border:    rgba(100,80,200,0.12);
+  --border2:   rgba(100,80,200,0.22);
+  --text:      #1a1030;
+  --text2:     rgba(26,16,48,0.6);
+  --text3:     rgba(26,16,48,0.35);
+  --shadow:    0 8px 32px rgba(100,80,200,0.12);
+  --shadow-lg: 0 16px 56px rgba(100,80,200,0.18);
+  --glow:      rgba(139,92,246,0.08);
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; overflow:hidden; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  color: var(--text);
+  display: flex;
+  position: relative;
+  transition: color var(--transition);
+}
+
+/* ── Starfield Background ── */
+.bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .bg-canvas {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(88,28,220,0.45) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(56,14,150,0.3) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 10% 70%, rgba(30,10,100,0.3) 0%, transparent 60%),
+    #07070f;
+}
+
+[data-theme="light"] .bg-canvas {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(139,92,246,0.2) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(109,40,217,0.12) 0%, transparent 60%),
+    #f0eeff;
+}
+
+/* Stars */
+.stars { position:absolute; inset:0; }
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  animation: twinkle var(--dur, 3s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+[data-theme="light"] .star { background: rgba(80,40,180,0.3); }
+
+@keyframes twinkle {
+  0%,100% { opacity: var(--min-op, 0.2); transform: scale(1); }
+  50%      { opacity: var(--max-op, 0.8); transform: scale(1.3); }
+}
+
+/* ── Layout ── */
+.sidebar {
+  width: var(--sidebar-w);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border);
+  transition: all var(--transition);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Sidebar Logo ── */
+.sidebar-logo {
+  padding: 24px 18px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.05em;
+  box-shadow: 0 4px 16px rgba(124,58,237,0.4);
+  flex-shrink: 0;
+}
+
+.logo-text { line-height: 1.1; }
+.logo-name {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #a78bfa, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ── Sidebar Nav ── */
+.sidebar-nav {
+  flex: 1;
+  padding: 14px 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sidebar-nav::-webkit-scrollbar { width: 0; }
+
+.nav-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text3);
+  text-transform: uppercase;
+  padding: 10px 8px 5px;
+  margin-top: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(79,70,229,0.2));
+  color: #a78bfa;
+  border-color: rgba(124,58,237,0.25);
+}
+
+.nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+
+.nav-count {
+  margin-left: auto;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: rgba(124,58,237,0.15);
+  color: #a78bfa;
+  letter-spacing: 0.05em;
+}
+
+/* ── Sidebar Footer ── */
+.sidebar-footer {
+  padding: 14px 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.theme-row:hover { border-color: var(--border2); }
+.theme-row-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+
+.theme-sw {
+  width: 34px; height: 18px;
+  border-radius: 9px;
+  background: rgba(124,58,237,0.3);
+  position: relative;
+  transition: all var(--transition);
+}
+.theme-sw.on { background: linear-gradient(135deg, #7c3aed, #4f46e5); }
+.theme-sw::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  top: 3px; left: 3px;
+  transition: all var(--transition);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.theme-sw.on::after { left: 19px; }
+
+.license-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.license-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.license-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+
+.tier-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.tier-badge.free { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.tier-badge.pro  { background: rgba(124,58,237,0.2); color: #a78bfa; }
+
+.upgrade-btn {
+  width: 100%;
+  padding: 7px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(79,70,229,0.2));
+  border: 1px solid rgba(124,58,237,0.3);
+  color: #a78bfa;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: all var(--transition);
+}
+.upgrade-btn:hover { background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(79,70,229,0.35)); }
+
+/* ── Top Bar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 58px;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.topbar-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #a78bfa, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text2);
+  backdrop-filter: blur(10px);
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #a78bfa;
+  box-shadow: 0 0 8px rgba(167,139,250,0.6);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ── Pages ── */
+.page { flex:1; overflow-y:auto; padding:24px 28px; display:none; }
+.page.active { display:block; }
+.page::-webkit-scrollbar { width:5px; }
+.page::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+/* ── Dashboard Stats ── */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  transition: all var(--transition);
+}
+
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+.stat-card-glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  border-radius: inherit;
+}
+
+.stat-card-icon { font-size: 24px; margin-bottom: 14px; position: relative; z-index: 1; }
+.stat-card-val {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+.stat-card-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Section Header ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+.section-sub   { font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; }
+
+/* ── Automation Grid ── */
+.auto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+/* ── Automation Card ── */
+.auto-card {
+  border-radius: 18px;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  transition: all 0.25s ease;
+  animation: slideUp 0.4s ease both;
+}
+
+.auto-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--border2); }
+.auto-card.running { box-shadow: 0 0 0 2px var(--card-glow, #7c3aed), var(--shadow-lg); }
+
+@keyframes slideUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+
+/* Card gradient header */
+.card-header-area {
+  padding: 20px 20px 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-bg-glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  transition: opacity var(--transition);
+}
+
+.auto-card:hover .card-bg-glow { opacity: 0.28; }
+
+.card-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.card-icon {
+  width: 46px; height: 46px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  transition: all var(--transition);
+}
+
+.auto-card:hover .card-icon { background: rgba(255,255,255,0.18); transform: scale(1.05); }
+
+.card-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  transition: all var(--transition);
+}
+
+.auto-card.running .card-badge {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.card-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+}
+
+/* Card info strip — unique per card */
+.card-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.card-info-item {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.55);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.05em;
+}
+
+.card-info-dot {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+}
+
+/* Card body */
+.card-body {
+  padding: 14px 20px 18px;
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+}
+
+.card-desc {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.progress-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 3px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  transition: width 0.1s linear;
+  background: var(--card-accent, #7c3aed);
+}
+
+/* Launch button — unique per card */
+.card-launch-btn {
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 9px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text2);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all var(--transition);
+  font-weight: 500;
+}
+
+.card-launch-btn:hover {
+  background: var(--surface2);
+  border-color: var(--card-accent, #7c3aed);
+  color: var(--text);
+}
+
+.card-launch-btn.running-state {
+  border-color: var(--card-accent, #7c3aed);
+  color: var(--text);
+}
+
+.btn-spinner {
+  width: 11px; height: 11px;
+  border: 1.5px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+
+.auto-card.running .btn-spinner { display: block; }
+.auto-card.running .btn-arrow   { display: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Log Panel ── */
+.log-panel {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  background: var(--surface);
+}
+
+.log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.log-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.log-dot { width:6px; height:6px; border-radius:50%; background:#a78bfa; box-shadow:0 0 6px rgba(167,139,250,0.5); }
+
+.log-clear-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color var(--transition);
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+.log-clear-btn:hover { color: var(--text); background: var(--surface2); }
+
+.log-body {
+  padding: 12px 18px;
+  height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: 'DM Mono', monospace;
+}
+.log-body::-webkit-scrollbar { width: 4px; }
+.log-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.log-entry { font-size: 11px; display: flex; gap: 12px; animation: fadeIn 0.2s ease; }
+.log-time  { color: var(--text3); flex-shrink: 0; }
+.log-msg   { color: var(--text2); }
+.log-entry.success .log-msg { color: #a78bfa; }
+.log-entry.error   .log-msg { color: #f87171; }
+.log-entry.info    .log-msg { color: #60a5fa; }
+.log-empty { font-size: 11px; color: var(--text3); margin: auto; text-align: center; }
+
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.15s ease;
+}
+
+.modal {
+  background: #0f0a1e;
+  border: 1px solid rgba(124,58,237,0.3);
+  border-radius: 20px;
+  padding: 32px;
+  width: 440px;
+  box-shadow: 0 24px 80px rgba(88,28,220,0.3);
+  animation: slideUp 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="light"] .modal {
+  background: #fff;
+  border-color: rgba(124,58,237,0.2);
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 200px;
+  background: radial-gradient(ellipse, rgba(124,58,237,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.modal-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; color: var(--text); position: relative; }
+.modal-sub   { font-family:'DM Mono',monospace; font-size:11px; color:var(--text3); margin-bottom:22px; line-height:1.6; position:relative; }
+.modal-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.12em; color:var(--text3); text-transform:uppercase; margin-bottom:7px; display:block; position:relative; }
+
+.modal-input {
+  width: 100%;
+  background: rgba(124,58,237,0.08);
+  border: 1px solid rgba(124,58,237,0.2);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  padding: 10px 13px;
+  margin-bottom: 16px;
+  outline: none;
+  transition: border-color var(--transition);
+  position: relative;
+}
+.modal-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+
+.modal-row { display: flex; gap: 10px; margin-top: 6px; position: relative; }
+.modal-btn { flex:1; padding:10px; border-radius:10px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all var(--transition); border:1px solid var(--border); font-weight:500; }
+.modal-btn.cancel  { background:transparent; color:var(--text3); }
+.modal-btn.cancel:hover { color:var(--text); border-color:var(--border2); }
+.modal-btn.confirm { background:linear-gradient(135deg,#7c3aed,#4f46e5); color:#fff; border:none; font-weight:700; }
+.modal-btn.confirm:hover { opacity:0.85; }
+
+/* ── Toast ── */
+.toast-container { position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:8px; z-index:999; }
+.toast {
+  background: rgba(15,10,30,0.95);
+  border: 1px solid rgba(124,58,237,0.3);
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(88,28,220,0.3);
+  animation: toastIn 0.3s ease;
+  color: var(--text);
+  min-width: 240px;
+  backdrop-filter: blur(20px);
+}
+.toast.success { border-left: 3px solid #a78bfa; }
+.toast.error   { border-left: 3px solid #f87171; }
+
+@keyframes toastIn  { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:none} }
+@keyframes toastOut { from{opacity:1;transform:none} to{opacity:0;transform:translateX(16px)} }
+
+/* ── Onboarding ── */
+.onboarding-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:400; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px); animation:fadeIn 0.3s ease; }
+.onboarding-card { background:#0f0a1e; border:1px solid rgba(124,58,237,0.3); border-radius:24px; padding:48px; width:520px; max-width:95vw; box-shadow:0 24px 80px rgba(88,28,220,0.4); animation:slideUp 0.3s ease; position:relative; overflow:hidden; }
+.onboarding-card::before { content:''; position:absolute; top:-50%; left:50%; transform:translateX(-50%); width:400px; height:300px; background:radial-gradient(ellipse,rgba(124,58,237,0.2) 0%,transparent 70%); pointer-events:none; }
+.ob-dots { display:flex; gap:6px; margin-bottom:36px; position:relative; }
+.ob-dot { flex:1; height:3px; border-radius:3px; background:rgba(124,58,237,0.2); transition:background 0.3s; }
+.ob-dot.active { background:linear-gradient(90deg,#7c3aed,#4f46e5); }
+.ob-dot.done   { background:#7c3aed; opacity:0.4; }
+.ob-icon { font-size:44px; margin-bottom:18px; display:block; position:relative; }
+.ob-title { font-size:24px; font-weight:800; letter-spacing:-0.03em; margin-bottom:12px; color:#fff; line-height:1.2; position:relative; }
+.ob-title span { background:linear-gradient(135deg,#a78bfa,#818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.ob-body { font-family:'DM Mono',monospace; font-size:12px; color:rgba(255,255,255,0.4); line-height:1.8; margin-bottom:28px; position:relative; }
+.ob-features { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:28px; position:relative; }
+.ob-feature { background:rgba(124,58,237,0.1); border:1px solid rgba(124,58,237,0.2); border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:9px; font-size:12px; color:rgba(255,255,255,0.8); }
+.ob-badge { margin-left:auto; font-family:'DM Mono',monospace; font-size:9px; padding:2px 6px; border-radius:4px; letter-spacing:0.05em; }
+.ob-badge.free { background:rgba(167,139,250,0.15); color:#a78bfa; }
+.ob-badge.pro  { background:rgba(251,191,36,0.15); color:#fbbf24; }
+.ob-nav { display:flex; align-items:center; justify-content:space-between; position:relative; }
+.ob-skip { font-family:'DM Mono',monospace; font-size:11px; color:rgba(255,255,255,0.3); background:none; border:none; cursor:pointer; letter-spacing:0.08em; text-transform:uppercase; transition:color var(--transition); }
+.ob-skip:hover { color:rgba(255,255,255,0.6); }
+.ob-next { padding:10px 24px; border-radius:10px; background:linear-gradient(135deg,#7c3aed,#4f46e5); border:none; color:#fff; font-family:'DM Mono',monospace; font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; box-shadow:0 4px 16px rgba(124,58,237,0.4); transition:opacity var(--transition); }
+.ob-next:hover { opacity:0.85; }
+.ob-back { padding:10px 18px; border-radius:10px; border:1px solid rgba(124,58,237,0.25); background:transparent; color:rgba(255,255,255,0.4); font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all var(--transition); }
+.ob-back:hover { border-color:rgba(124,58,237,0.5); color:rgba(255,255,255,0.7); }
+
+/* ── Settings Page ── */
+.settings-section { background:var(--surface); backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:16px; margin-bottom:18px; overflow:hidden; }
+.settings-section-header { padding:14px 20px; border-bottom:1px solid var(--border); font-size:13px; font-weight:700; color:var(--text); background:var(--surface2); }
+.settings-row { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); transition:background var(--transition); }
+.settings-row:last-child { border-bottom:none; }
+.settings-row:hover { background:var(--surface2); }
+.settings-row-label { font-size:13px; color:var(--text); font-weight:500; }
+.settings-row-sub { font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); margin-top:2px; }
+.settings-input { background:rgba(124,58,237,0.08); border:1px solid rgba(124,58,237,0.2); border-radius:8px; color:var(--text); font-family:'DM Mono',monospace; font-size:12px; padding:8px 11px; outline:none; transition:border-color var(--transition); width:210px; }
+.settings-input:focus { border-color:#7c3aed; }
+.settings-toggle { width:36px; height:20px; border-radius:10px; border:1px solid rgba(124,58,237,0.2); background:rgba(124,58,237,0.1); cursor:pointer; position:relative; transition:all var(--transition); flex-shrink:0; }
+.settings-toggle.on { background:linear-gradient(135deg,#7c3aed,#4f46e5); border-color:#7c3aed; }
+.settings-toggle::after { content:''; position:absolute; width:14px; height:14px; border-radius:50%; background:rgba(255,255,255,0.5); top:2px; left:2px; transition:all var(--transition); }
+.settings-toggle.on::after { left:18px; background:#fff; }
+.settings-btn { padding:7px 16px; border-radius:8px; border:1px solid rgba(124,58,237,0.25); background:transparent; color:#a78bfa; font-family:'DM Mono',monospace; font-size:11px; cursor:pointer; transition:all var(--transition); letter-spacing:0.05em; }
+.settings-btn:hover { border-color:#7c3aed; background:rgba(124,58,237,0.1); }
+.settings-btn.danger:hover { border-color:#f87171; color:#f87171; background:rgba(248,113,113,0.08); }
+.settings-save { display:flex; gap:10px; padding:20px; border-top:1px solid var(--border); justify-content:flex-end; }
+.save-btn { padding:10px 24px; border-radius:10px; background:linear-gradient(135deg,#7c3aed,#4f46e5); border:none; color:#fff; font-family:'DM Mono',monospace; font-size:12px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(124,58,237,0.3); transition:opacity var(--transition); }
+.save-btn:hover { opacity:0.85; }
+
+/* ── Category section ── */
+.category-section { margin-bottom:28px; }
+.category-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; cursor:pointer; user-select:none; }
+.cat-icon { width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; background:var(--surface); border:1px solid var(--border); }
+.cat-name { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.18em; color:var(--text3); text-transform:uppercase; flex:1; }
+.cat-count { font-family:'DM Mono',monospace; font-size:9px; color:var(--text3); padding:2px 7px; border-radius:8px; background:var(--surface); border:1px solid var(--border); }
+.cat-chevron { font-size:10px; color:var(--text3); transition:transform var(--transition); }
+
+@keyframes fadeOut  { from{opacity:1} to{opacity:0} }
+</style>
+</head>
+<body>
+
+<!-- Starfield background -->
+<div class="bg-canvas">
+  <div class="stars" id="stars"></div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">(/ )</div>
+    <div class="logo-text">
+      <div class="logo-name">NYXON</div>
+      <div class="logo-sub">Automation Launcher</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-label">Overview</div>
+    <div class="nav-item active" onclick="switchPage('dashboard',this)">
+      <span class="nav-icon">⚡</span><span>Dashboard</span>
+    </div>
+
+    <div class="nav-label">Categories</div>
+    <div class="nav-item" onclick="switchPage('automations',this,'File Management')">
+      <span class="nav-icon">📁</span><span>File Tools</span><span class="nav-count">8</span>
+    </div>
+    <div class="nav-item" onclick="switchPage('automations',this,'System')">
+      <span class="nav-icon">💻</span><span>System</span><span class="nav-count">6</span>
+    </div>
+    <div class="nav-item" onclick="switchPage('automations',this,'Network & Web')">
+      <span class="nav-icon">🌐</span><span>Network & Web</span><span class="nav-count">6</span>
+    </div>
+    <div class="nav-item" onclick="switchPage('automations',this,'Business')">
+      <span class="nav-icon">🏢</span><span>Business</span><span class="nav-count">5</span>
+    </div>
+
+    <div class="nav-label">App</div>
+    <div class="nav-item" onclick="switchPage('settings',this)">
+      <span class="nav-icon">⚙</span><span>Settings</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="theme-row" onclick="toggleTheme()">
+      <span class="theme-row-label" id="theme-label">🌙 Dark mode</span>
+      <div class="theme-sw on" id="theme-sw"></div>
+    </div>
+    <div class="license-box">
+      <div class="license-row">
+        <span class="license-label">License</span>
+        <span class="tier-badge free" id="sidebar-tier">Free</span>
+      </div>
+      <div id="sidebar-upgrade-wrap">
+        <button class="upgrade-btn" onclick="showUpgradeModal()">⭐ Upgrade to Pro</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span id="status-text">25 automations ready</span>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="dash-stats">
+      <div class="stat-card" style="background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(79,70,229,0.08));">
+        <div class="stat-card-glow" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);"></div>
+        <div class="stat-card-icon">⚡</div>
+        <div class="stat-card-val" style="background:linear-gradient(135deg,#a78bfa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">25</div>
+        <div class="stat-card-label">Automations</div>
+      </div>
+      <div class="stat-card" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.06));">
+        <div class="stat-card-glow" style="background:linear-gradient(135deg,#10b981,#059669);"></div>
+        <div class="stat-card-icon">🆓</div>
+        <div class="stat-card-val" style="color:#34d399;">8</div>
+        <div class="stat-card-label">Free Tools</div>
+      </div>
+      <div class="stat-card" style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.06));">
+        <div class="stat-card-glow" style="background:linear-gradient(135deg,#f59e0b,#d97706);"></div>
+        <div class="stat-card-icon">⭐</div>
+        <div class="stat-card-val" style="color:#fbbf24;">17</div>
+        <div class="stat-card-label">Pro Tools</div>
+      </div>
+      <div class="stat-card" style="background:linear-gradient(135deg,rgba(236,72,153,0.12),rgba(190,24,93,0.06));">
+        <div class="stat-card-glow" style="background:linear-gradient(135deg,#ec4899,#be185d);"></div>
+        <div class="stat-card-icon">🗂</div>
+        <div class="stat-card-val" style="color:#f472b6;">4</div>
+        <div class="stat-card-label">Categories</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Quick Launch</div>
+      <div class="section-sub">Free automations</div>
+    </div>
+    <div class="auto-grid" id="quick-grid" style="margin-bottom:28px;"></div>
+
+    <div class="section-header">
+      <div class="section-title">Activity Log</div>
+      <div class="section-sub">Output stream</div>
+    </div>
+    <div class="log-panel">
+      <div class="log-header">
+        <div class="log-header-left"><div class="log-dot"></div>output stream</div>
+        <button class="log-clear-btn" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="log-body" id="log">
+        <div class="log-empty" id="logEmpty">No activity yet — launch an automation.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTOMATIONS -->
+  <div class="page" id="page-automations">
+    <div id="automations-container"></div>
+    <div class="section-header" style="margin-top:20px;margin-bottom:12px;">
+      <div class="section-title">Activity Log</div>
+    </div>
+    <div class="log-panel">
+      <div class="log-header">
+        <div class="log-header-left"><div class="log-dot"></div>output stream</div>
+        <button class="log-clear-btn" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="log-body" id="log2">
+        <div class="log-empty" id="logEmpty2">No activity yet — launch an automation.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="settings-section">
+      <div class="settings-section-header">⚙ Deploy Script</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Default script path</div><div class="settings-row-sub">Path to your deploy script file</div></div>
+        <input class="settings-input" id="st-deploy" type="text" placeholder="/home/user/scripts/deploy.sh"/>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">🛡 Auto Backup</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Default backup destination</div><div class="settings-row-sub">Where backups are saved</div></div>
+        <input class="settings-input" id="st-backup-loc" type="text" placeholder="/home/user/Backups"/>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Backup schedule time</div><div class="settings-row-sub">24-hour format</div></div>
+        <input class="settings-input" id="st-backup-time" type="time" value="02:00" style="width:120px;"/>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">🔔 Notifications</div>
+      <div class="settings-row"><div><div class="settings-row-label">Automation complete</div><div class="settings-row-sub">Notify when an automation finishes</div></div><div class="settings-toggle on" id="toggle-complete" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div><div class="settings-row-label">Errors</div><div class="settings-row-sub">Notify when an automation fails</div></div><div class="settings-toggle on" id="toggle-error" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div><div class="settings-row-label">Daily Digest</div><div class="settings-row-sub">Show system stats notification</div></div><div class="settings-toggle on" id="toggle-digest" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div><div class="settings-row-label">Start minimized</div><div class="settings-row-sub">Launch app in system tray</div></div><div class="settings-toggle" id="toggle-minimized" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">🔑 License</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Status</div><div class="settings-row-sub" id="settings-license-sub">Free tier — limited automations</div></div>
+        <button class="settings-btn" id="settings-upgrade-btn" onclick="showUpgradeModal()">Upgrade to Pro →</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">🔧 Tools</div>
+      <div class="settings-row"><div><div class="settings-row-label">Check for updates</div><div class="settings-row-sub">Check if a new version is available</div></div><button class="settings-btn" onclick="manualCheckUpdate()">Check Now</button></div>
+      <div class="settings-row"><div><div class="settings-row-label">Undo last File Organize</div><div class="settings-row-sub">Restore files to original location</div></div><button class="settings-btn danger" onclick="undoOrganize()">↩ Undo</button></div>
+      <div class="settings-row"><div><div class="settings-row-label">Replay onboarding</div><div class="settings-row-sub">Show the welcome tour again</div></div><button class="settings-btn" onclick="resetOnboarding();setTimeout(showOnboarding,300)">Replay</button></div>
+      <div class="settings-row"><div><div class="settings-row-label">Reset all settings</div><div class="settings-row-sub">Restore defaults</div></div><button class="settings-btn danger" onclick="resetSettings()">Reset</button></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">ℹ About</div>
+      <div class="settings-row"><div><div class="settings-row-label">Nyxon Launcher</div><div class="settings-row-sub">Version 1.0.0 · © 2026 Nyxon · Built in the dark. Ready for the future.</div></div></div>
+    </div>
+    <div class="settings-save">
+      <button class="save-btn" onclick="commitSettings()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ── Generate Starfield ────────────────────────────────────────────────────────
+(function() {
+  const container = document.getElementById('stars');
+  for (let i = 0; i < 120; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    star.style.cssText = `
+      width:${size}px; height:${size}px;
+      top:${Math.random()*100}%;
+      left:${Math.random()*100}%;
+      --dur:${(Math.random()*4+2).toFixed(1)}s;
+      --delay:${(Math.random()*4).toFixed(1)}s;
+      --min-op:${(Math.random()*0.2+0.05).toFixed(2)};
+      --max-op:${(Math.random()*0.5+0.3).toFixed(2)};
+    `;
+    container.appendChild(star);
+  }
+})();
+
+// ── Automation Definitions ────────────────────────────────────────────────────
+const automations = [
+  {
+    id:'file', type:'file', icon:'🗂', name:'File Organizer', badge:'File Ops',
+    category:'File Management', tier:'free', duration:3200,
+    gradient:'linear-gradient(135deg,#065f46,#047857)',
+    accent:'#34d399', glow:'#10b981',
+    info:['Sorts by type','Creates folders','Conflict safe'],
+    btnLabel:'Organize Files',
+    desc:'Sort files by extension into labeled folders. Includes confirmation before moving anything.',
+    steps:['Opening folder picker…','Scanning directory…','Detecting file types…','Awaiting confirmation…','Organizing…','Done.']
+  },
+  {
+    id:'renamer', type:'renamer', icon:'✏', name:'Bulk Renamer', badge:'File Ops',
+    category:'File Management', tier:'pro', duration:2000,
+    gradient:'linear-gradient(135deg,#92400e,#b45309)',
+    accent:'#fbbf24', glow:'#f59e0b',
+    info:['Sequential naming','Custom base name','Sort first'],
+    btnLabel:'Rename Files',
+    desc:'Rename files sequentially with a custom base name. Item 1, Item 2, Item 3…',
+    steps:['Opening folder picker…','Reading files…','Applying pattern…','Renaming…','Done.']
+  },
+  {
+    id:'backup', type:'backup', icon:'🛡', name:'Auto Backup', badge:'Backup',
+    category:'File Management', tier:'pro', duration:3000,
+    gradient:'linear-gradient(135deg,#1e3a5f,#1d4ed8)',
+    accent:'#60a5fa', glow:'#3b82f6',
+    info:['Local · Drive · Dropbox','Scheduled daily','Dated folders'],
+    btnLabel:'Start Backup',
+    desc:'Backup to local folder, external drive, or cloud. Schedules daily runs automatically.',
+    steps:['Opening config…','Selecting source…','Choosing destination…','Copying files…','Done.']
+  },
+  {
+    id:'duplicate', type:'duplicate', icon:'🔍', name:'Duplicate Detector', badge:'Scanner',
+    category:'File Management', tier:'pro', duration:6500,
+    gradient:'linear-gradient(135deg,#7f1d1d,#b91c1c)',
+    accent:'#f87171', glow:'#ef4444',
+    info:['MD5 checksums','Report or delete','Deep scan'],
+    btnLabel:'Scan for Duplicates',
+    desc:'Find exact duplicate files using checksums. Report only or delete duplicates automatically.',
+    steps:['Scanning folder…','Computing checksums…','Comparing files…','Finding duplicates…','Done.']
+  },
+  {
+    id:'system', type:'system', icon:'⚙', name:'System Flush', badge:'System',
+    category:'System', tier:'free', duration:2000,
+    gradient:'linear-gradient(135deg,#431407,#c2410c)',
+    accent:'#fb923c', glow:'#f97316',
+    info:['Temp · Cache · Trash','Full clipboard clear','Shows MB freed'],
+    btnLabel:'Flush System',
+    desc:'Clear temp files, browser cache, full clipboard (text + images) and recycle bin.',
+    steps:['Measuring sizes…','Clearing temp files…','Clearing cache…','Emptying recycle bin…','Clearing clipboard…','Done.']
+  },
+  {
+    id:'email', type:'email', icon:'✉', name:'Daily Digest', badge:'Email',
+    category:'System', tier:'pro', duration:2600,
+    gradient:'linear-gradient(135deg,#2e1065,#6d28d9)',
+    accent:'#c4b5fd', glow:'#8b5cf6',
+    info:['CPU · RAM · Uptime','Desktop notification','Morning summary'],
+    btnLabel:'Send Digest',
+    desc:'Compile system stats and deliver a morning summary notification to your desktop.',
+    steps:['Gathering metrics…','Compiling digest…','Sending notification…','Delivered.']
+  },
+  {
+    id:'script', type:'script', icon:'⟩_', name:'Deploy Script', badge:'Script',
+    category:'System', tier:'pro', duration:4000,
+    gradient:'linear-gradient(135deg,#1c1917,#44403c)',
+    accent:'#d6d3d1', glow:'#a8a29e',
+    info:['Python · Bash · Node','Real terminal','Auto-detects interpreter'],
+    btnLabel:'Run Script',
+    desc:'Pick any script file and run it in a real terminal window. Supports Python, Bash, Node.js.',
+    steps:['Opening file picker…','Detecting interpreter…','Launching terminal…','Running…','Done.']
+  },
+  {
+    id:'startup', type:'startup', icon:'🚀', name:'Startup Manager', badge:'System',
+    category:'System', tier:'pro', duration:4000,
+    gradient:'linear-gradient(135deg,#0c4a6e,#0369a1)',
+    accent:'#38bdf8', glow:'#0ea5e9',
+    info:['Enable · Disable','All platforms','Speeds up boot'],
+    btnLabel:'Manage Startup',
+    desc:'View and toggle apps that launch at system startup. Disabling unused apps speeds up boot.',
+    steps:['Scanning startup entries…','Loading apps…','Ready to manage.']
+  },
+  {
+    id:'netchecker', type:'netchecker', icon:'📡', name:'Internet Checker', badge:'Network',
+    category:'Network & Web', tier:'free', duration:5000,
+    gradient:'linear-gradient(135deg,#0f172a,#1e3a5f)',
+    accent:'#818cf8', glow:'#6366f1',
+    info:['4 hosts · 3 pings each','Avg latency','Connection quality'],
+    btnLabel:'Check Connection',
+    desc:'Ping 4 hosts 3 times each and report stable average latency and connection quality.',
+    steps:['Starting diagnostics…','Pinging hosts (3× each)…','Averaging results…','Report ready.']
+  },
+  {
+    id:'pwgen', type:'pwgen', icon:'🔑', name:'Password Generator', badge:'Generate',
+    category:'Network & Web', tier:'free', duration:1000,
+    gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+    accent:'#a5b4fc', glow:'#818cf8',
+    info:['Cryptographically secure','Customizable','Copy to clipboard'],
+    btnLabel:'Generate Password',
+    desc:'Generate strong, random passwords with full control over length and character types.',
+    steps:['Generating…','Done.']
+  },
+  {
+    id:'web', type:'web', icon:'🌐', name:'Launch Workspace', badge:'Web',
+    category:'Network & Web', tier:'pro', duration:1800,
+    gradient:'linear-gradient(135deg,#042f2e,#0f766e)',
+    accent:'#2dd4bf', glow:'#14b8a6',
+    info:['Saved URL sets','One-click launch','Multiple workspaces'],
+    btnLabel:'Open Workspace',
+    desc:'Save named sets of URLs — Work, Dev, Personal — and open your entire workspace in one click.',
+    steps:['Loading workspaces…','Opening URLs…','Workspace ready.']
+  },
+  {
+    id:'assessment', type:'assessment', icon:'📊', name:'Company Assessment', badge:'Diagnostic',
+    category:'Business', tier:'pro', duration:8000,
+    gradient:'linear-gradient(135deg,#451a03,#92400e)',
+    accent:'#fcd34d', glow:'#f59e0b',
+    info:['CPU · RAM · Disk · Network','Security scan','Score + report'],
+    btnLabel:'Run Assessment',
+    desc:'Full system diagnostic. Scores CPU, memory, disk, network, and security. Sends report to Nyxon.',
+    steps:['Collecting info…','Testing hardware…','Testing network…','Security scan…','Calculating score…','Sending report…','Done.']
+  },
+  {
+    id:'feedback', type:'feedback', icon:'⭐', name:'Rate Nyxon', badge:'Feedback',
+    category:'Business', tier:'free', duration:2000,
+    gradient:'linear-gradient(135deg,#1a1a2e,#4c1d95)',
+    accent:'#a78bfa', glow:'#7c3aed',
+    info:['Star rating','Quick survey','Helps us improve'],
+    btnLabel:'Leave Feedback',
+    desc:'Rate the app and share your thoughts. Takes 60 seconds and helps shape future updates.',
+    steps:['Opening form…','Collecting responses…','Submitting…','Thank you!']
+  },
+  {
+    id:'contact', type:'contact', icon:'📬', name:'Contact Nyxon', badge:'Contact',
+    category:'Business', tier:'free', duration:1500,
+    gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+    accent:'#a5b4fc', glow:'#818cf8',
+    info:['Direct message','Subject categories','Fast response'],
+    btnLabel:'Send Message',
+    desc:'Get in touch with the Nyxon team directly from the app for support or partnerships.',
+    steps:['Opening form…','Sending message…','Delivered ✓']
+  },
+  {
+    id:'scraper', type:'scraper', icon:'🕷', name:'Web Scraper', badge:'Scrape',
+    category:'Network & Web', tier:'pro', duration:5000,
+    gradient:'linear-gradient(135deg,#1a0533,#6d28d9)',
+    accent:'#c084fc', glow:'#a855f7',
+    info:['CSS selector','Multi-page','CSV · JSON · Excel'],
+    btnLabel:'Start Scraping',
+    desc:'Scrape data from any website using CSS selectors. Export to CSV, JSON or Excel.',
+    steps:['Opening scraper config…','Fetching page…','Extracting data…','Exporting results…','Done.']
+  },
+  {
+    id:'pdf2img', type:'pdf2img', icon:'🖼', name:'PDF to Image', badge:'Convert',
+    category:'File Management', tier:'pro', duration:4000,
+    gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    accent:'#93c5fd', glow:'#60a5fa',
+    info:['PNG · JPEG','Custom resolution','Batch pages'],
+    btnLabel:'Convert PDF',
+    desc:'Convert any PDF into high-resolution PNG or JPEG images, one file per page.',
+    steps:['Opening PDF…','Rendering pages…','Exporting images…','Done.']
+  },
+  {
+  id:'img2pdf', type:'img2pdf', icon:'📑', name:'Image to PDF', badge:'Convert',
+  category:'File Management', tier:'pro', duration:4000,
+  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+  accent:'#93c5fd', glow:'#60a5fa',
+  info:['JPG · PNG','Multi-image','Custom page size'],
+  btnLabel:'Convert to PDF',
+  desc:'Combine one or more images into a single PDF — one image per page.',
+  steps:['Selecting images…','Building PDF…','Saving file…','Done.']
+},
+  {
+  id:'compressor', type:'compressor', icon:'🗜', name:'File Compressor', badge:'Zip',
+  category:'File Management', tier:'pro', duration:4000,
+  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+  accent:'#93c5fd', glow:'#60a5fa',
+  info:['Files or folder','Adjustable ratio','.zip output'],
+  btnLabel:'Compress',
+  desc:'Bundle files or an entire folder into a single compressed .zip archive.',
+  steps:['Selecting items…','Compressing…','Saving archive…','Done.']
+},
+{
+  id:'qrcode', type:'qrcode', icon:'▦', name:'QR Code Generator', badge:'Generate',
+  category:'Network & Web', tier:'free', duration:2000,
+  gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+  accent:'#a5b4fc', glow:'#818cf8',
+  info:['Any URL or text','PNG output','Custom size'],
+  btnLabel:'Generate QR Code',
+  desc:'Turn any URL or text into a scannable QR code image.',
+  steps:['Encoding…','Rendering…','Saving…','Done.']
+},
+{
+  id:'dnscleaner', type:'dnscleaner', icon:'🌐', name:'DNS Cleaner', badge:'Flush',
+  category:'Network & Web', tier:'free', duration:3000,
+  gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+  accent:'#a5b4fc', glow:'#818cf8',
+  info:['Flush DNS cache','Fixes connectivity','One click'],
+  btnLabel:'Flush DNS',
+  desc:'Clear your system\'s DNS cache — fixes stale sites, slow lookups, and connection glitches.',
+  steps:['Flushing DNS cache…','Restarting resolver…','Done.']
+},
+{
+  id:'invoice', type:'invoice', icon:'🧾', name:'Invoice Generator', badge:'Generate',
+  category:'Business', tier:'pro', duration:3000,
+  gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+  accent:'#a5b4fc', glow:'#818cf8',
+  info:['Line items','Auto tax + total','PDF output'],
+  btnLabel:'Generate Invoice',
+  desc:'Fill in client and line-item details to generate a clean PDF invoice.',
+  steps:['Building layout…','Calculating totals…','Saving PDF…','Done.']
+},
+{
+  id:'filesplitter', type:'filesplitter', icon:'✂', name:'File Splitter', badge:'Split',
+  category:'File Management', tier:'pro', duration:3000,
+  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+  accent:'#93c5fd', glow:'#60a5fa',
+  info:['Split by size','Rejoin chunks','Any file type'],
+  btnLabel:'Split or Join',
+  desc:'Split a large file into smaller chunks, or rejoin chunks back into the original file.',
+  steps:['Reading file…','Writing chunks…','Done.']
+},
+{
+  id:'expensetracker', type:'expensetracker', icon:'💰', name:'Expense Tracker', badge:'Export',
+  category:'Business', tier:'pro', duration:2000,
+  gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+  accent:'#a5b4fc', glow:'#818cf8',
+  info:['Persists between sessions','Categorized','Excel export'],
+  btnLabel:'Open Tracker',
+  desc:'Log expenses over time and export them to Excel whenever you need a report.',
+  steps:['Loading entries…','Ready.']
+},
+{
+  id:'clipboardhistory', type:'clipboardhistory', icon:'📋', name:'Clipboard History', badge:'Track',
+  category:'System', tier:'pro', duration:1500,
+  gradient:'linear-gradient(135deg,#312e81,#1e1b4b)',
+  accent:'#a78bfa', glow:'#8b5cf6',
+  info:['Auto-tracks copies','Pin favorites','Click to re-copy'],
+  btnLabel:'Open History',
+  desc:'Keep a rolling history of everything you copy, with pinning and quick re-copy.',
+  steps:['Loading history…','Ready.']
+},
+{
+  id:'appuninstaller', type:'appuninstaller', icon:'🗑', name:'App Uninstaller Helper', badge:'Manage',
+  category:'System', tier:'pro', duration:2000,
+  gradient:'linear-gradient(135deg,#312e81,#1e1b4b)',
+  accent:'#a78bfa', glow:'#8b5cf6',
+  info:['Lists installed apps','Shows sizes','One-click uninstall'],
+  btnLabel:'View Apps',
+  desc:'See every installed app with its size, and uninstall the ones you don\'t need — safely, using the OS\'s own uninstaller.',
+  steps:['Scanning installed apps…','Ready.']
+},
+];
+
+const PRO_AUTOMATIONS = new Set(automations.filter(a=>a.tier==='pro').map(a=>a.id));
+const running = new Set();
+let isPro = false;
+
+// ── IPC Map ───────────────────────────────────────────────────────────────────
+const ipcMap = {
+  file:       () => window.nexus?.runFileOrganizer(),
+  email:      () => window.nexus?.runDailyDigest(),
+  system:     () => window.nexus?.runSystemFlush(),
+  web:        () => launchWorkspace(),
+  script:     () => window.nexus?.runScript(),
+  renamer:    () => launchRenamer(),
+  backup:     () => launchBackup(),
+  netchecker: () => window.nexus?.runNetChecker(),
+  assessment: () => launchAssessment(),
+  feedback:   () => launchFeedback(),
+  contact:    () => launchContact(),
+  duplicate:  () => launchDuplicateDetector(),
+  startup:    () => launchStartupManager(),
+  scraper: () => launchScraper(),
+  pdf2img: () => launchPdfToImage(),
+  img2pdf: () => launchImageToPdf(),
+  compressor: () => launchCompressor(),
+  qrcode: () => launchQrCode(),
+  dnscleaner: () => window.nexus?.runDnsCleaner(),
+  invoice: () => launchInvoice(),
+  filesplitter: () => launchFileSplitter(),
+  expensetracker: () => launchExpenseTracker(),
+  clipboardhistory: () => launchClipboardHistory(),
+  appuninstaller: () => launchAppUninstaller(),
+  pwgen: () => launchPasswordGenerator(),
+};
+
+// ── Card Builder ──────────────────────────────────────────────────────────────
+function buildCard(auto, delay = 0) {
+  const isLocked = PRO_AUTOMATIONS.has(auto.id) && !isPro;
+  const card = document.createElement('div');
+  card.className = 'auto-card';
+  card.dataset.id = auto.id;
+  card.style.animationDelay = `${delay}s`;
+  card.style.setProperty('--card-accent', auto.accent);
+  card.style.setProperty('--card-glow', auto.glow);
+
+  const infoHtml = auto.info.map((item, i) => `
+    ${i > 0 ? '<div class="card-info-dot"></div>' : ''}
+    <div class="card-info-item">${item}</div>
+  `).join('');
+
+  const badgeStyle = isLocked
+    ? 'background:rgba(251,191,36,0.15);color:#fbbf24;border-color:rgba(251,191,36,0.2);'
+    : '';
+  const badgeText = isLocked ? 'PRO' : auto.badge;
+
+  card.innerHTML = `
+    <div class="card-header-area">
+      <div class="card-bg-glow" style="background:${auto.gradient};"></div>
+      <div class="card-top-row">
+        <div class="card-icon">${auto.icon}</div>
+        <span class="card-badge" id="badge-${auto.id}" style="${badgeStyle}">${badgeText}</span>
+      </div>
+      <div class="card-name">${auto.name}</div>
+      <div class="card-info">${infoHtml}</div>
+    </div>
+    <div class="card-body">
+      <div class="card-desc">${auto.desc}</div>
+      <div class="progress-track"><div class="progress-fill" id="prog-${auto.id}" style="background:${auto.accent};"></div></div>
+      <button class="card-launch-btn" id="btn-${auto.id}" onclick="launch('${auto.id}')"
+        style="${isLocked ? `border-color:rgba(251,191,36,0.3);color:#fbbf24;` : ''}">
+        <div class="btn-spinner"></div>
+        <span class="btn-arrow">${isLocked ? '🔒' : '▶'}</span>
+        <span class="btn-label">${isLocked ? 'Pro Feature' : auto.btnLabel}</span>
+      </button>
+    </div>
+  `;
+  return card;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const grid = document.getElementById('quick-grid');
+  grid.innerHTML = '';
+  automations.filter(a => a.tier === 'free').forEach((a, i) => grid.appendChild(buildCard(a, i*0.05)));
+}
+
+function renderAutomations(filter) {
+  document.getElementById('topbar-title').textContent = filter || 'All Automations';
+  const container = document.getElementById('automations-container');
+  container.innerHTML = '';
+  const filtered = filter ? automations.filter(a => a.category === filter) : automations;
+
+  if (filter) {
+    const grid = document.createElement('div');
+    grid.className = 'auto-grid';
+    grid.style.marginBottom = '28px';
+    filtered.forEach((a, i) => grid.appendChild(buildCard(a, i*0.05)));
+    container.appendChild(grid);
+  } else {
+    const groups = {};
+    automations.forEach(a => { if(!groups[a.category]) groups[a.category]=[]; groups[a.category].push(a); });
+    const icons = {'File Management':'📁','System':'💻','Network & Web':'🌐','Business':'🏢'};
+    Object.entries(groups).forEach(([cat, items], gi) => {
+      const sec = document.createElement('div');
+      sec.className = 'category-section';
+      sec.innerHTML = `<div class="category-header" onclick="toggleCat(this)"><div class="cat-icon">${icons[cat]||'⚡'}</div><div class="cat-name">${cat}</div><span class="cat-count">${items.length}</span><span class="cat-chevron">▾</span></div>`;
+      const grid = document.createElement('div');
+      grid.className = 'auto-grid';
+      grid.style.marginBottom = '8px';
+      items.forEach((a, i) => grid.appendChild(buildCard(a, (gi*items.length+i)*0.04)));
+      sec.appendChild(grid);
+      container.appendChild(sec);
+    });
+  }
+}
+
+function toggleCat(header) {
+  const grid = header.nextElementSibling;
+  const chevron = header.querySelector('.cat-chevron');
+  const collapsed = grid.style.display === 'none';
+  grid.style.display = collapsed ? 'grid' : 'none';
+  chevron.style.transform = collapsed ? '' : 'rotate(-90deg)';
+}
+
+// ── Page Switching ────────────────────────────────────────────────────────────
+function switchPage(page, el, filter) {
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  const titles = {dashboard:'Dashboard', settings:'Settings', automations: filter || 'Automations'};
+  document.getElementById('topbar-title').textContent = titles[page];
+  if (page === 'automations') renderAutomations(filter);
+}
+
+// ── Theme ─────────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-sw').classList.toggle('on', !isDark);
+  document.getElementById('theme-label').textContent = isDark ? '☀️ Light mode' : '🌙 Dark mode';
+  localStorage.setItem('nyxon-theme', isDark ? 'light' : 'dark');
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('nyxon-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  const isDark = saved === 'dark';
+  document.getElementById('theme-sw').classList.toggle('on', isDark);
+  document.getElementById('theme-label').textContent = isDark ? '🌙 Dark mode' : '☀️ Light mode';
+}
+
+//launchScraper
+async function launchScraper() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:540px;max-height:85vh;overflow-y:auto;">
+        <div class="modal-title">🕷 Web Scraper</div>
+        <div class="modal-sub">Scrape data from any website using CSS selectors.</div>
+
+        <!-- Mode tabs -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+          <button id="tab-basic" onclick="switchScraperTab('basic')"
+            style="flex:1;padding:8px;border-radius:8px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border:1px solid rgba(124,58,237,0.4);background:linear-gradient(135deg,rgba(124,58,237,0.3),rgba(79,70,229,0.3));color:#c084fc;transition:all 0.2s;">
+            Basic
+          </button>
+          <button id="tab-advanced" onclick="switchScraperTab('advanced')"
+            style="flex:1;padding:8px;border-radius:8px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);transition:all 0.2s;">
+            Advanced
+          </button>
+        </div>
+
+        <!-- Basic Mode -->
+        <div id="scraper-basic">
+          <label class="modal-label">Target URL</label>
+          <input class="modal-input" id="sc-url" type="url" placeholder="https://example.com/products"/>
+
+          <label class="modal-label">CSS Selector</label>
+          <input class="modal-input" id="sc-selector" type="text" placeholder=".price, h2.title, .product-name"/>
+
+          <div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:12px;margin-bottom:16px;">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em;">Common selectors</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              ${['.price','.title','h1','h2','p','a','img','.product','.item','td'].map(s=>
+                `<span onclick="document.getElementById('sc-selector').value='${s}'"
+                  style="font-family:'DM Mono',monospace;font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.25);color:#c084fc;cursor:pointer;transition:all 0.2s;">${s}</span>`
+              ).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Mode -->
+        <div id="scraper-advanced" style="display:none;">
+          <label class="modal-label">Start URL</label>
+          <input class="modal-input" id="sc-url-adv" type="url" placeholder="https://example.com/products?page=1"/>
+
+          <label class="modal-label">CSS Selector</label>
+          <input class="modal-input" id="sc-selector-adv" type="text" placeholder=".product-title"/>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label class="modal-label">Number of pages</label>
+              <input class="modal-input" id="sc-pages" type="number" value="3" min="1" max="50" style="margin-bottom:12px;"/>
+            </div>
+            <div>
+              <label class="modal-label">Delay between pages (ms)</label>
+              <input class="modal-input" id="sc-delay" type="number" value="1000" min="500" max="10000" style="margin-bottom:12px;"/>
+            </div>
+          </div>
+
+          <label class="modal-label">Pagination URL pattern</label>
+          <input class="modal-input" id="sc-pagination" type="text" placeholder="https://example.com/products?page={page}"/>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:-12px;margin-bottom:16px;">Use {page} as placeholder for page number</div>
+        </div>
+
+        <!-- Export format -->
+        <label class="modal-label">Export format</label>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          ${['CSV','JSON','Excel'].map((fmt, i) => `
+            <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+              padding:9px;border-radius:8px;border:1px solid ${i===0?'rgba(124,58,237,0.4)':'var(--border)'};
+              background:${i===0?'rgba(124,58,237,0.15)':'transparent'};
+              color:${i===0?'#c084fc':'var(--text3)'};
+              font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;"
+              id="fmt-label-${fmt.toLowerCase()}"
+              onclick="selectExportFmt('${fmt.toLowerCase()}')">
+              <input type="radio" name="sc-format" value="${fmt.toLowerCase()}" ${i===0?'checked':''} style="display:none;"/>
+              ${fmt === 'CSV' ? '📄' : fmt === 'JSON' ? '📋' : '📊'} ${fmt}
+            </label>`).join('')}
+        </div>
+
+        <!-- Output filename -->
+        <label class="modal-label">Save as</label>
+        <input class="modal-input" id="sc-filename" type="text" placeholder="scraped-data"/>
+
+        <!-- Preview area -->
+        <div id="sc-preview" style="display:none;background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:12px;margin-bottom:16px;max-height:140px;overflow-y:auto;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em;">Preview (first 5 results)</div>
+          <div id="sc-preview-content" style="font-family:'DM Mono',monospace;font-size:11px;color:#c084fc;"></div>
+        </div>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="sc-cancel">Cancel</button>
+          <button class="modal-btn" id="sc-preview-btn" onclick="previewScrape()"
+            style="flex:1;background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.3);color:#c084fc;">
+            Preview →
+          </button>
+          <button class="modal-btn confirm" id="sc-scrape">Scrape & Export →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    window._scraperOverlay = overlay;
+    window._scraperResolve = resolve;
+    window._scraperMode = 'basic';
+    window._exportFmt = 'csv';
+
+    overlay.querySelector('#sc-cancel').onclick = () => {
+      overlay.remove();
+      delete window._scraperOverlay;
+      delete window._scraperResolve;
+      resolve(null);
+    };
+
+    overlay.querySelector('#sc-scrape').onclick = () => {
+      const mode = window._scraperMode;
+      const fmt  = window._exportFmt;
+      const filename = overlay.querySelector('#sc-filename').value.trim() || 'scraped-data';
+
+      let config;
+      if (mode === 'basic') {
+        const url      = overlay.querySelector('#sc-url').value.trim();
+        const selector = overlay.querySelector('#sc-selector').value.trim();
+        if (!url || !selector) {
+          overlay.querySelector('#sc-url').style.borderColor = '#f87171';
+          return;
+        }
+        config = { mode: 'basic', url, selector, format: fmt, filename };
+      } else {
+        const url        = overlay.querySelector('#sc-url-adv').value.trim();
+        const selector   = overlay.querySelector('#sc-selector-adv').value.trim();
+        const pages      = parseInt(overlay.querySelector('#sc-pages').value) || 3;
+        const delay      = parseInt(overlay.querySelector('#sc-delay').value) || 1000;
+        const pagination = overlay.querySelector('#sc-pagination').value.trim();
+        if (!url || !selector) {
+          overlay.querySelector('#sc-url-adv').style.borderColor = '#f87171';
+          return;
+        }
+        config = { mode: 'advanced', url, selector, pages, delay, pagination, format: fmt, filename };
+      }
+
+      overlay.remove();
+      delete window._scraperOverlay;
+      delete window._scraperResolve;
+      resolve(window.nexus?.runWebScraper(config));
+    };
+  });
+}
+
+async function launchImageToPdf() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:480px;">
+        <div class="modal-title">📑 Image to PDF</div>
+        <div class="modal-sub">Combine images into a single PDF. You'll pick the images after confirming these settings.</div>
+
+        <label class="modal-label">Page fit</label>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          ${[['fit','Fit to image'],['a4','A4'],['letter','Letter']].map(([val,label], i) => `
+            <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+              padding:9px;border-radius:8px;border:1px solid ${i===0?'rgba(124,58,237,0.4)':'var(--border)'};
+              background:${i===0?'rgba(124,58,237,0.15)':'transparent'};
+              color:${i===0?'#c084fc':'var(--text3)'};
+              font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;"
+              id="i2p-fit-label-${val}"
+              onclick="selectImg2pdfFit('${val}')">
+              <input type="radio" name="i2p-fit" value="${val}" ${i===0?'checked':''} style="display:none;"/>
+              ${label}
+            </label>`).join('')}
+        </div>
+
+        <label class="modal-label">Save as</label>
+        <input class="modal-input" id="i2p-filename" type="text" placeholder="combined-images"/>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="i2p-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="i2p-confirm">Choose Images & Convert →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    window._i2pFit = 'fit';
+
+    overlay.querySelector('#i2p-cancel').onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+
+    overlay.querySelector('#i2p-confirm').onclick = () => {
+      const fit = window._i2pFit;
+      const filename = overlay.querySelector('#i2p-filename').value.trim() || 'combined-images';
+      overlay.remove();
+      resolve(window.nexus?.runImageToPdf({ fit, filename }));
+    };
+  });
+}
+
+function selectImg2pdfFit(val) {
+  window._i2pFit = val;
+  ['fit','a4','letter'].forEach(v => {
+    const label = document.getElementById(`i2p-fit-label-${v}`);
+    if (!label) return;
+    if (v === val) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+async function launchPdfToImage() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:480px;">
+        <div class="modal-title">🖼 PDF to Image</div>
+        <div class="modal-sub">Convert a PDF into PNG or JPEG images — one file per page. You'll pick the PDF after confirming these settings.</div>
+
+        <label class="modal-label">Output format</label>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          ${['PNG','JPEG'].map((fmt, i) => `
+            <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+              padding:9px;border-radius:8px;border:1px solid ${i===0?'rgba(124,58,237,0.4)':'var(--border)'};
+              background:${i===0?'rgba(124,58,237,0.15)':'transparent'};
+              color:${i===0?'#c084fc':'var(--text3)'};
+              font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;"
+              id="pdf-fmt-label-${fmt.toLowerCase()}"
+              onclick="selectPdfFormat('${fmt.toLowerCase()}')">
+              <input type="radio" name="pdf-format" value="${fmt.toLowerCase()}" ${i===0?'checked':''} style="display:none;"/>
+              ${fmt === 'PNG' ? '🖼' : '📷'} ${fmt}
+            </label>`).join('')}
+        </div>
+
+        <div id="pdf-quality-row" style="display:none;">
+          <label class="modal-label">JPEG quality <span id="pdf-quality-val" style="color:var(--text3);">90</span></label>
+          <input type="range" id="pdf-quality" min="30" max="100" value="90"
+            oninput="document.getElementById('pdf-quality-val').textContent=this.value"
+            style="width:100%;margin-bottom:18px;accent-color:#8b5cf6;"/>
+        </div>
+
+        <label class="modal-label">Resolution</label>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          ${[['1','Standard'],['2','High'],['3','Print']].map(([val,label], i) => `
+            <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+              padding:9px;border-radius:8px;border:1px solid ${i===1?'rgba(124,58,237,0.4)':'var(--border)'};
+              background:${i===1?'rgba(124,58,237,0.15)':'transparent'};
+              color:${i===1?'#c084fc':'var(--text3)'};
+              font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;"
+              id="pdf-scale-label-${val}"
+              onclick="selectPdfScale('${val}')">
+              <input type="radio" name="pdf-scale" value="${val}" ${i===1?'checked':''} style="display:none;"/>
+              ${label}
+            </label>`).join('')}
+        </div>
+
+        <label class="modal-label">Pages</label>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+            padding:9px;border-radius:8px;border:1px solid rgba(124,58,237,0.4);
+            background:rgba(124,58,237,0.15);color:#c084fc;
+            font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;"
+            id="pdf-range-label-all" onclick="selectPdfRange('all')">
+            <input type="radio" name="pdf-range" value="all" checked style="display:none;"/>
+            All pages
+          </label>
+          <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+            padding:9px;border-radius:8px;border:1px solid var(--border);
+            background:transparent;color:var(--text3);
+            font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;"
+            id="pdf-range-label-custom" onclick="selectPdfRange('custom')">
+            <input type="radio" name="pdf-range" value="custom" style="display:none;"/>
+            Custom range
+          </label>
+        </div>
+
+        <div id="pdf-range-row" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;">
+          <div>
+            <label class="modal-label">From page</label>
+            <input class="modal-input" id="pdf-page-start" type="number" value="1" min="1"/>
+          </div>
+          <div>
+            <label class="modal-label">To page</label>
+            <input class="modal-input" id="pdf-page-end" type="number" value="1" min="1"/>
+          </div>
+        </div>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="pdf-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="pdf-confirm">Choose PDF & Convert →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    window._pdfFormat = 'png';
+    window._pdfScale = '2';
+    window._pdfRange = 'all';
+
+    overlay.querySelector('#pdf-cancel').onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+
+    overlay.querySelector('#pdf-confirm').onclick = () => {
+      const format  = window._pdfFormat;
+      const scale   = parseFloat(window._pdfScale);
+      const quality = parseInt(overlay.querySelector('#pdf-quality').value) || 90;
+      const range   = window._pdfRange;
+
+      let pages = 'all';
+      if (range === 'custom') {
+        const start = parseInt(overlay.querySelector('#pdf-page-start').value) || 1;
+        const end   = parseInt(overlay.querySelector('#pdf-page-end').value) || start;
+        pages = { start, end };
+      }
+
+      overlay.remove();
+      resolve(window.nexus?.runPdfToImage({ format, scale, quality, pages }));
+    };
+  });
+}
+
+function selectPdfFormat(fmt) {
+  window._pdfFormat = fmt;
+  document.getElementById('pdf-quality-row').style.display = fmt === 'jpeg' ? 'block' : 'none';
+  ['png','jpeg'].forEach(f => {
+    const label = document.getElementById(`pdf-fmt-label-${f}`);
+    if (!label) return;
+    if (f === fmt) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+function selectPdfScale(val) {
+  window._pdfScale = val;
+  ['1','2','3'].forEach(v => {
+    const label = document.getElementById(`pdf-scale-label-${v}`);
+    if (!label) return;
+    if (v === val) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+function selectPdfRange(val) {
+  window._pdfRange = val;
+  document.getElementById('pdf-range-row').style.display = val === 'custom' ? 'grid' : 'none';
+  ['all','custom'].forEach(v => {
+    const label = document.getElementById(`pdf-range-label-${v}`);
+    if (!label) return;
+    if (v === val) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+async function launchCompressor() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:480px;">
+        <div class="modal-title">🗜 File Compressor</div>
+        <div class="modal-sub">Choose what to compress, then pick the files or folder next.</div>
+
+        <label class="modal-label">What are you compressing?</label>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          ${[['files','Select files'],['folder','Select a folder']].map(([val,label], i) => `
+            <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+              padding:9px;border-radius:8px;border:1px solid ${i===0?'rgba(124,58,237,0.4)':'var(--border)'};
+              background:${i===0?'rgba(124,58,237,0.15)':'transparent'};
+              color:${i===0?'#c084fc':'var(--text3)'};
+              font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;"
+              id="cmp-mode-label-${val}"
+              onclick="selectCompressorMode('${val}')">
+              <input type="radio" name="cmp-mode" value="${val}" ${i===0?'checked':''} style="display:none;"/>
+              ${label}
+            </label>`).join('')}
+        </div>
+
+        <label class="modal-label">Compression level</label>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          ${[['3','Fast'],['6','Balanced'],['9','Smallest']].map(([val,label], i) => `
+            <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+              padding:9px;border-radius:8px;border:1px solid ${i===1?'rgba(124,58,237,0.4)':'var(--border)'};
+              background:${i===1?'rgba(124,58,237,0.15)':'transparent'};
+              color:${i===1?'#c084fc':'var(--text3)'};
+              font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;"
+              id="cmp-level-label-${val}"
+              onclick="selectCompressorLevel('${val}')">
+              <input type="radio" name="cmp-level" value="${val}" ${i===1?'checked':''} style="display:none;"/>
+              ${label}
+            </label>`).join('')}
+        </div>
+
+        <label class="modal-label">Archive name</label>
+        <input class="modal-input" id="cmp-filename" type="text" placeholder="archive"/>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="cmp-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="cmp-confirm">Choose & Compress →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    window._cmpMode = 'files';
+    window._cmpLevel = '6';
+
+    overlay.querySelector('#cmp-cancel').onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+
+    overlay.querySelector('#cmp-confirm').onclick = () => {
+      const mode = window._cmpMode;
+      const level = parseInt(window._cmpLevel);
+      const filename = overlay.querySelector('#cmp-filename').value.trim() || 'archive';
+      overlay.remove();
+      resolve(window.nexus?.runCompressor({ mode, level, filename }));
+    };
+  });
+}
+
+function selectCompressorMode(val) {
+  window._cmpMode = val;
+  ['files','folder'].forEach(v => {
+    const label = document.getElementById(`cmp-mode-label-${v}`);
+    if (!label) return;
+    if (v === val) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+function selectCompressorLevel(val) {
+  window._cmpLevel = val;
+  ['3','6','9'].forEach(v => {
+    const label = document.getElementById(`cmp-level-label-${v}`);
+    if (!label) return;
+    if (v === val) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+async function launchPasswordGenerator() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:460px;">
+        <div class="modal-title">🔑 Password Generator</div>
+        <div class="modal-sub">Adjust the settings, then generate as many as you need.</div>
+
+        <label class="modal-label">Length <span id="pw-length-val" style="color:var(--text3);">16</span></label>
+        <input type="range" id="pw-length" min="8" max="64" value="16"
+          oninput="document.getElementById('pw-length-val').textContent=this.value"
+          style="width:100%;margin-bottom:16px;accent-color:#8b5cf6;"/>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);cursor:pointer;">
+            <input type="checkbox" id="pw-lower" checked style="accent-color:#8b5cf6;"/> Lowercase (a-z)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);cursor:pointer;">
+            <input type="checkbox" id="pw-upper" checked style="accent-color:#8b5cf6;"/> Uppercase (A-Z)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);cursor:pointer;">
+            <input type="checkbox" id="pw-numbers" checked style="accent-color:#8b5cf6;"/> Numbers (2-9)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);cursor:pointer;">
+            <input type="checkbox" id="pw-symbols" checked style="accent-color:#8b5cf6;"/> Symbols (!@#$…)
+          </label>
+        </div>
+
+        <label class="modal-label">How many?</label>
+        <input class="modal-input" id="pw-count" type="number" value="1" min="1" max="20"/>
+
+        <div id="pw-results" style="margin:14px 0;display:none;"></div>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="pw-cancel">Close</button>
+          <button class="modal-btn confirm" id="pw-generate">Generate →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#pw-cancel').onclick = () => {
+      overlay.remove();
+      resolve({ success: true, log: ['Closed.'] });
+    };
+
+    overlay.querySelector('#pw-generate').onclick = async () => {
+      const length = parseInt(overlay.querySelector('#pw-length').value);
+      const lower = overlay.querySelector('#pw-lower').checked;
+      const upper = overlay.querySelector('#pw-upper').checked;
+      const numbers = overlay.querySelector('#pw-numbers').checked;
+      const symbols = overlay.querySelector('#pw-symbols').checked;
+      const count = parseInt(overlay.querySelector('#pw-count').value) || 1;
+
+      if (!lower && !upper && !numbers && !symbols) {
+        alert('Select at least one character type.');
+        return;
+      }
+
+      const result = await window.nexus?.runPasswordGenerator({ length, lower, upper, numbers, symbols, count });
+      const resultsDiv = overlay.querySelector('#pw-results');
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = (result?.passwords || []).map(pw => `
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(124,58,237,0.08);
+          border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px 10px;margin-bottom:6px;">
+          <code style="flex:1;font-family:'DM Mono',monospace;font-size:12px;color:var(--text1);word-break:break-all;">${pw}</code>
+          <button type="button" onclick="navigator.clipboard.writeText('${pw.replace(/'/g,"\\'")}')"
+            style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);color:#c084fc;
+            font-family:'DM Mono',monospace;font-size:10px;padding:4px 8px;border-radius:6px;cursor:pointer;flex-shrink:0;">Copy</button>
+        </div>
+      `).join('');
+    };
+  });
+}
+
+async function launchQrCode() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:440px;">
+        <div class="modal-title">▦ QR Code Generator</div>
+        <div class="modal-sub">Enter a URL or any text to encode.</div>
+
+        <label class="modal-label">Content</label>
+        <input class="modal-input" id="qr-text" type="text" placeholder="https://example.com"/>
+
+        <label class="modal-label">Size (px)</label>
+        <input class="modal-input" id="qr-size" type="number" value="400" min="100" max="1000"/>
+
+        <label class="modal-label">Save as</label>
+        <input class="modal-input" id="qr-filename" type="text" placeholder="qrcode"/>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="qr-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="qr-confirm">Generate →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#qr-cancel').onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+
+    overlay.querySelector('#qr-confirm').onclick = () => {
+      const text = overlay.querySelector('#qr-text').value.trim();
+      const size = parseInt(overlay.querySelector('#qr-size').value) || 400;
+      const filename = overlay.querySelector('#qr-filename').value.trim() || 'qrcode';
+
+      if (!text) {
+        overlay.querySelector('#qr-text').style.borderColor = '#f87171';
+        return;
+      }
+
+      overlay.remove();
+      resolve(window.nexus?.runQrCode({ text, size, filename }));
+    };
+  });
+}
+
+async function launchInvoice() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:560px;max-height:85vh;overflow-y:auto;">
+        <div class="modal-title">🧾 Invoice Generator</div>
+        <div class="modal-sub">Fill in the details below to generate a PDF invoice.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label class="modal-label">Your business name</label>
+            <input class="modal-input" id="inv-from" type="text" placeholder="Nyxon Studio"/>
+          </div>
+          <div>
+            <label class="modal-label">Client name</label>
+            <input class="modal-input" id="inv-to" type="text" placeholder="Client Ltd."/>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label class="modal-label">Invoice number</label>
+            <input class="modal-input" id="inv-number" type="text" placeholder="INV-001"/>
+          </div>
+          <div>
+            <label class="modal-label">Tax rate (%)</label>
+            <input class="modal-input" id="inv-tax" type="number" value="0" min="0" max="100"/>
+          </div>
+        </div>
+
+        <label class="modal-label">Line items</label>
+        <div id="inv-items" style="margin-bottom:10px;"></div>
+        <button type="button" onclick="addInvoiceItem()"
+          style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);color:#c084fc;
+          font-family:'DM Mono',monospace;font-size:11px;padding:7px 12px;border-radius:8px;cursor:pointer;margin-bottom:16px;">
+          + Add item
+        </button>
+
+        <label class="modal-label">Notes (optional)</label>
+        <input class="modal-input" id="inv-notes" type="text" placeholder="Payment due within 14 days"/>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="inv-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="inv-confirm">Generate PDF →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    window._invOverlay = overlay;
+    window._invItemCount = 0;
+
+    addInvoiceItem(); // start with one row
+
+    overlay.querySelector('#inv-cancel').onclick = () => {
+      overlay.remove();
+      delete window._invOverlay;
+      resolve(null);
+    };
+
+    overlay.querySelector('#inv-confirm').onclick = () => {
+      const from = overlay.querySelector('#inv-from').value.trim() || 'Your Business';
+      const to = overlay.querySelector('#inv-to').value.trim() || 'Client';
+      const number = overlay.querySelector('#inv-number').value.trim() || 'INV-001';
+      const tax = parseFloat(overlay.querySelector('#inv-tax').value) || 0;
+      const notes = overlay.querySelector('#inv-notes').value.trim();
+
+      const items = [];
+      overlay.querySelectorAll('.inv-item-row').forEach(row => {
+        const desc = row.querySelector('.inv-item-desc').value.trim();
+        const qty = parseFloat(row.querySelector('.inv-item-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.inv-item-price').value) || 0;
+        if (desc) items.push({ desc, qty, price });
+      });
+
+      if (items.length === 0) {
+        return;
+      }
+
+      overlay.remove();
+      delete window._invOverlay;
+      resolve(window.nexus?.runInvoice({ from, to, number, tax, notes, items }));
+    };
+  });
+}
+
+function addInvoiceItem() {
+  const overlay = window._invOverlay;
+  if (!overlay) return;
+  const container = overlay.querySelector('#inv-items');
+  const id = window._invItemCount++;
+
+  const row = document.createElement('div');
+  row.className = 'inv-item-row';
+  row.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center;';
+  row.innerHTML = `
+    <input class="modal-input inv-item-desc" type="text" placeholder="Item description" style="margin-bottom:0;"/>
+    <input class="modal-input inv-item-qty" type="number" value="1" min="0" placeholder="Qty" style="margin-bottom:0;"/>
+    <input class="modal-input inv-item-price" type="number" value="0" min="0" step="0.01" placeholder="Price" style="margin-bottom:0;"/>
+    <button type="button" onclick="this.parentElement.remove()"
+      style="background:transparent;border:1px solid var(--border);color:var(--text3);
+      border-radius:6px;width:28px;height:28px;cursor:pointer;">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+async function launchFileSplitter() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:460px;">
+        <div class="modal-title">✂ File Splitter</div>
+        <div class="modal-sub">Split a file into chunks, or rejoin chunks into the original.</div>
+
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          ${[['split','Split a file'],['join','Join chunks']].map(([val,label], i) => `
+            <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+              padding:9px;border-radius:8px;border:1px solid ${i===0?'rgba(124,58,237,0.4)':'var(--border)'};
+              background:${i===0?'rgba(124,58,237,0.15)':'transparent'};
+              color:${i===0?'#c084fc':'var(--text3)'};
+              font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;"
+              id="fs-mode-label-${val}"
+              onclick="selectFileSplitterMode('${val}')">
+              <input type="radio" name="fs-mode" value="${val}" ${i===0?'checked':''} style="display:none;"/>
+              ${label}
+            </label>`).join('')}
+        </div>
+
+        <div id="fs-split-opts">
+          <label class="modal-label">Chunk size (MB)</label>
+          <input class="modal-input" id="fs-chunk-mb" type="number" value="10" min="1" max="2000"/>
+        </div>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="fs-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="fs-confirm">Choose File(s) →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    window._fsMode = 'split';
+
+    overlay.querySelector('#fs-cancel').onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+
+    overlay.querySelector('#fs-confirm').onclick = () => {
+      const mode = window._fsMode;
+      const chunkMb = parseInt(overlay.querySelector('#fs-chunk-mb').value) || 10;
+      overlay.remove();
+      resolve(window.nexus?.runFileSplitter({ mode, chunkMb }));
+    };
+  });
+}
+
+function selectFileSplitterMode(val) {
+  window._fsMode = val;
+  document.getElementById('fs-split-opts').style.display = val === 'split' ? 'block' : 'none';
+  const confirmBtn = document.querySelector('#fs-confirm');
+  if (confirmBtn) confirmBtn.textContent = val === 'split' ? 'Choose File →' : 'Choose Chunks →';
+  ['split','join'].forEach(v => {
+    const label = document.getElementById(`fs-mode-label-${v}`);
+    if (!label) return;
+    if (v === val) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+async function launchExpenseTracker() {
+  return new Promise(async (resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:600px;max-height:85vh;overflow-y:auto;">
+        <div class="modal-title">💰 Expense Tracker</div>
+        <div class="modal-sub">Entries are saved between sessions. Export to Excel anytime.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 2fr 1fr auto;gap:8px;margin-bottom:6px;">
+          <input class="modal-input" id="exp-date" type="date" style="margin-bottom:0;"/>
+          <input class="modal-input" id="exp-category" type="text" placeholder="Category" style="margin-bottom:0;"/>
+          <input class="modal-input" id="exp-desc" type="text" placeholder="Description" style="margin-bottom:0;"/>
+          <input class="modal-input" id="exp-amount" type="number" step="0.01" placeholder="Amount" style="margin-bottom:0;"/>
+          <button type="button" onclick="addExpenseEntry()"
+            style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);color:#c084fc;
+            border-radius:8px;cursor:pointer;padding:0 12px;">+</button>
+        </div>
+
+        <div id="exp-list" style="max-height:260px;overflow-y:auto;margin:14px 0;border:1px solid var(--border);border-radius:8px;"></div>
+
+        <div id="exp-total" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);margin-bottom:16px;"></div>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="exp-close">Close</button>
+          <button class="modal-btn confirm" id="exp-export">Export to Excel →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    window._expOverlay = overlay;
+
+    const { expenses } = await window.nexus?.getExpenses();
+    window._expenses = expenses || [];
+    renderExpenseList();
+
+    overlay.querySelector('#exp-close').onclick = () => {
+      overlay.remove();
+      delete window._expOverlay;
+      resolve({ success: true, log: ['Tracker closed.'] });
+    };
+
+    overlay.querySelector('#exp-export').onclick = async () => {
+      const result = await window.nexus?.exportExpenses(window._expenses);
+      overlay.remove();
+      delete window._expOverlay;
+      resolve(result);
+    };
+  });
+}
+
+function renderExpenseList() {
+  const overlay = window._expOverlay;
+  if (!overlay) return;
+  const list = overlay.querySelector('#exp-list');
+  const expenses = window._expenses || [];
+
+  if (expenses.length === 0) {
+    list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;">No expenses yet — add one above.</div>`;
+  } else {
+    list.innerHTML = expenses.map((e, i) => `
+      <div style="display:grid;grid-template-columns:1fr 1fr 2fr 1fr auto;gap:8px;padding:8px 10px;
+        border-bottom:1px solid var(--border);font-size:12px;align-items:center;">
+        <span>${e.date}</span>
+        <span style="color:#c084fc;">${e.category}</span>
+        <span>${e.desc}</span>
+        <span>${e.amount.toFixed(2)}</span>
+        <button type="button" onclick="deleteExpenseEntry(${i})"
+          style="background:transparent;border:none;color:var(--text3);cursor:pointer;">✕</button>
+      </div>
+    `).join('');
+  }
+
+  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  overlay.querySelector('#exp-total').textContent = `Total: ${total.toFixed(2)} across ${expenses.length} entr${expenses.length === 1 ? 'y' : 'ies'}`;
+}
+
+async function addExpenseEntry() {
+  const overlay = window._expOverlay;
+  if (!overlay) return;
+
+  const date = overlay.querySelector('#exp-date').value || new Date().toISOString().slice(0, 10);
+  const category = overlay.querySelector('#exp-category').value.trim() || 'Uncategorized';
+  const desc = overlay.querySelector('#exp-desc').value.trim();
+  const amount = parseFloat(overlay.querySelector('#exp-amount').value) || 0;
+
+  if (!desc) return;
+
+  const entry = { date, category, desc, amount };
+  await window.nexus?.addExpense(entry);
+  window._expenses.push(entry);
+  renderExpenseList();
+
+  overlay.querySelector('#exp-desc').value = '';
+  overlay.querySelector('#exp-amount').value = '';
+}
+
+async function deleteExpenseEntry(index) {
+  await window.nexus?.deleteExpense(index);
+  window._expenses.splice(index, 1);
+  renderExpenseList();
+}
+
+async function launchClipboardHistory() {
+  return new Promise(async (resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:560px;max-height:80vh;overflow-y:auto;">
+        <div class="modal-title">📋 Clipboard History</div>
+        <div class="modal-sub">Everything you copy shows up here automatically.</div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);cursor:pointer;">
+            <input type="checkbox" id="clip-watch-toggle" style="accent-color:#8b5cf6;"/>
+            Watch clipboard
+          </label>
+          <button type="button" onclick="clearClipboardHistory()"
+            style="background:transparent;border:1px solid var(--border);color:var(--text3);
+            font-family:'DM Mono',monospace;font-size:10px;padding:5px 10px;border-radius:6px;cursor:pointer;">
+            Clear all
+          </button>
+        </div>
+
+        <input class="modal-input" id="clip-search" type="text" placeholder="Search history…" style="margin-bottom:12px;"/>
+
+        <div id="clip-list" style="border:1px solid var(--border);border-radius:8px;"></div>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="clip-close">Close</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    window._clipOverlay = overlay;
+
+    const { history, watching } = await window.nexus?.getClipboardHistory();
+    window._clipHistory = history || [];
+    overlay.querySelector('#clip-watch-toggle').checked = !!watching;
+    renderClipboardList();
+
+    overlay.querySelector('#clip-watch-toggle').onchange = async (e) => {
+      await window.nexus?.toggleClipboardWatching(e.target.checked);
+    };
+
+    overlay.querySelector('#clip-search').oninput = renderClipboardList;
+
+    window.nexus?.onClipboardUpdate((history) => {
+      window._clipHistory = history;
+      renderClipboardList();
+    });
+
+    overlay.querySelector('#clip-close').onclick = () => {
+      overlay.remove();
+      delete window._clipOverlay;
+      resolve({ success: true, log: ['Closed.'] });
+    };
+  });
+}
+
+function renderClipboardList() {
+  const overlay = window._clipOverlay;
+  if (!overlay) return;
+  const list = overlay.querySelector('#clip-list');
+  const query = (overlay.querySelector('#clip-search')?.value || '').toLowerCase();
+  let entries = window._clipHistory || [];
+
+  if (query) entries = entries.filter(e => e.text.toLowerCase().includes(query));
+  // Pinned entries float to the top
+  entries = [...entries].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+  if (entries.length === 0) {
+    list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;">Nothing here yet — copy something to get started.</div>`;
+    return;
+  }
+
+  list.innerHTML = entries.map((e) => {
+    const preview = e.text.length > 80 ? e.text.slice(0, 80) + '…' : e.text;
+    const time = new Date(e.time).toLocaleTimeString();
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview.replace(/</g,'&lt;')}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;">${time}</div>
+        </div>
+        <button type="button" onclick="pinClipboardEntry('${e.id}')"
+          style="background:transparent;border:none;color:${e.pinned ? '#c084fc' : 'var(--text3)'};cursor:pointer;font-size:14px;">📌</button>
+        <button type="button" onclick="copyClipboardEntry('${e.id}')"
+          style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);color:#c084fc;
+          font-family:'DM Mono',monospace;font-size:10px;padding:4px 8px;border-radius:6px;cursor:pointer;">Copy</button>
+        <button type="button" onclick="deleteClipboardEntry('${e.id}')"
+          style="background:transparent;border:none;color:var(--text3);cursor:pointer;">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function copyClipboardEntry(id) {
+  await window.nexus?.copyClipboardEntry(id);
+}
+
+async function pinClipboardEntry(id) {
+  const { history } = await window.nexus?.pinClipboardEntry(id);
+  window._clipHistory = history;
+  renderClipboardList();
+}
+
+async function deleteClipboardEntry(id) {
+  const { history } = await window.nexus?.deleteClipboardEntry(id);
+  window._clipHistory = history;
+  renderClipboardList();
+}
+
+async function clearClipboardHistory() {
+  const { history } = await window.nexus?.clearClipboardHistory();
+  window._clipHistory = history;
+  renderClipboardList();
+}
+
+async function launchAppUninstaller() {
+  return new Promise(async (resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:560px;max-height:80vh;overflow-y:auto;">
+        <div class="modal-title">🗑 App Uninstaller Helper</div>
+        <div class="modal-sub">Sorted largest first. Uninstalling uses your OS's own uninstaller — nothing is force-deleted.</div>
+
+        <input class="modal-input" id="au-search" type="text" placeholder="Search installed apps…" style="margin-bottom:12px;"/>
+
+        <div id="au-list" style="border:1px solid var(--border);border-radius:8px;min-height:100px;">
+          <div style="padding:24px;text-align:center;color:var(--text3);font-size:12px;">Scanning…</div>
+        </div>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="au-close">Close</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    window._auOverlay = overlay;
+
+    try {
+      const { apps, error } = await window.nexus?.listInstalledApps();
+      window._auApps = apps || [];
+      window._auError = error;
+    } catch (err) {
+      window._auApps = [];
+      window._auError = `Failed to load apps: ${err.message || err}`;
+    }
+    renderAppList();
+
+    overlay.querySelector('#au-search').oninput = renderAppList;
+    overlay.querySelector('#au-close').onclick = () => {
+      overlay.remove();
+      delete window._auOverlay;
+      resolve({ success: true, log: ['Closed.'] });
+    };
+  });
+}
+
+function renderAppList() {
+  const overlay = window._auOverlay;
+  if (!overlay) return;
+  const list = overlay.querySelector('#au-list');
+  const query = (overlay.querySelector('#au-search')?.value || '').toLowerCase();
+
+  if (window._auError) {
+    list.innerHTML = `<div style="padding:20px;text-align:center;color:#f87171;font-size:12px;">${window._auError}</div>`;
+    return;
+  }
+
+  let apps = window._auApps || [];
+  if (query) apps = apps.filter(a => a.name.toLowerCase().includes(query));
+  apps = [...apps].sort((a, b) => (b.sizeKb || 0) - (a.sizeKb || 0));
+
+  if (apps.length === 0) {
+    list.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No apps found.</div>`;
+    return;
+  }
+
+  list.innerHTML = apps.map((a) => {
+    const sizeLabel = a.sizeKb ? `${(a.sizeKb / 1024).toFixed(1)} MB` : '—';
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12.5px;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;">${sizeLabel}${a.publisher ? ' · ' + a.publisher : ''}</div>
+        </div>
+        <button type="button" onclick="uninstallApp('${a.id.replace(/'/g, "\\'")}')"
+          style="background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.3);color:#f87171;
+          font-family:'DM Mono',monospace;font-size:10px;padding:5px 10px;border-radius:6px;cursor:pointer;">
+          Uninstall
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function uninstallApp(id) {
+  const app = (window._auApps || []).find(a => a.id === id);
+  if (!app) return;
+  const confirmed = confirm(`Uninstall "${app.name}"? This will launch its uninstaller.`);
+  if (!confirmed) return;
+
+  const result = await window.nexus?.uninstallApp(id);
+  if (result?.success) {
+    window._auApps = window._auApps.filter(a => a.id !== id);
+    renderAppList();
+  } else {
+    alert(result?.error || 'Uninstall failed or was cancelled.');
+  }
+}
+
+function switchScraperTab(tab) {
+  window._scraperMode = tab;
+  const overlay = window._scraperOverlay;
+  if (!overlay) return;
+
+  overlay.querySelector('#scraper-basic').style.display    = tab === 'basic'    ? 'block' : 'none';
+  overlay.querySelector('#scraper-advanced').style.display = tab === 'advanced' ? 'block' : 'none';
+
+  const basicBtn = overlay.querySelector('#tab-basic');
+  const advBtn   = overlay.querySelector('#tab-advanced');
+
+  if (tab === 'basic') {
+    basicBtn.style.background = 'linear-gradient(135deg,rgba(124,58,237,0.3),rgba(79,70,229,0.3))';
+    basicBtn.style.borderColor = 'rgba(124,58,237,0.4)';
+    basicBtn.style.color = '#c084fc';
+    advBtn.style.background = 'transparent';
+    advBtn.style.borderColor = 'var(--border)';
+    advBtn.style.color = 'var(--text3)';
+  } else {
+    advBtn.style.background = 'linear-gradient(135deg,rgba(124,58,237,0.3),rgba(79,70,229,0.3))';
+    advBtn.style.borderColor = 'rgba(124,58,237,0.4)';
+    advBtn.style.color = '#c084fc';
+    basicBtn.style.background = 'transparent';
+    basicBtn.style.borderColor = 'var(--border)';
+    basicBtn.style.color = 'var(--text3)';
+  }
+}
+
+function selectExportFmt(fmt) {
+  window._exportFmt = fmt;
+  const overlay = window._scraperOverlay;
+  if (!overlay) return;
+  ['csv','json','excel'].forEach(f => {
+    const label = overlay.querySelector(`#fmt-label-${f}`);
+    if (!label) return;
+    if (f === fmt) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+async function previewScrape() {
+  const overlay = window._scraperOverlay;
+  if (!overlay) return;
+
+  const btn = overlay.querySelector('#sc-preview-btn');
+  btn.textContent = 'Fetching…'; btn.disabled = true;
+
+  const mode = window._scraperMode;
+  const url      = mode === 'basic' ? overlay.querySelector('#sc-url').value.trim()      : overlay.querySelector('#sc-url-adv').value.trim();
+  const selector = mode === 'basic' ? overlay.querySelector('#sc-selector').value.trim() : overlay.querySelector('#sc-selector-adv').value.trim();
+
+  if (!url || !selector) {
+    btn.textContent = 'Preview →'; btn.disabled = false;
+    return;
+  }
+
+  const result = await window.nexus?.runWebScraper({ mode: 'preview', url, selector, format: 'csv', filename: 'preview' });
+
+  const previewEl = overlay.querySelector('#sc-preview');
+  const contentEl = overlay.querySelector('#sc-preview-content');
+
+  if (result?.preview && result.preview.length > 0) {
+    previewEl.style.display = 'block';
+    contentEl.innerHTML = result.preview.slice(0, 5).map((item, i) =>
+      `<div style="padding:3px 0;border-bottom:1px solid rgba(124,58,237,0.1);">${i+1}. ${item}</div>`
+    ).join('');
+  } else {
+    previewEl.style.display = 'block';
+    contentEl.innerHTML = '<div style="color:var(--text3);">No results found — try a different selector.</div>';
+  }
+
+  btn.textContent = 'Preview →'; btn.disabled = false;
+}
+
+// ── License ───────────────────────────────────────────────────────────────────
+async function initLicense() {
+  if (window.nexus) { const r = await window.nexus.checkLicense(); isPro = r?.active === true; }
+  updateLicenseUI();
+}
+
+function updateLicenseUI() {
+  const tier = document.getElementById('sidebar-tier');
+  const wrap = document.getElementById('sidebar-upgrade-wrap');
+  const btn  = document.getElementById('settings-upgrade-btn');
+  const sub  = document.getElementById('settings-license-sub');
+  if (isPro) {
+    tier.textContent = 'Pro'; tier.className = 'tier-badge pro';
+    if (wrap) wrap.style.display = 'none';
+    if (btn)  { btn.textContent = '✓ Active'; btn.disabled = true; }
+    if (sub)  sub.textContent = 'Nyxon Pro — all features unlocked';
+  }
+  renderDashboard();
+}
+
+function showUpgradeModal() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:460px;">
+        <div class="modal-title" style="background:linear-gradient(135deg,#a78bfa,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">⭐ Nyxon Pro</div>
+        <div class="modal-sub">Unlock all automations with a one-time license key.</div>
+        <div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:12px;padding:14px 16px;margin-bottom:18px;">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(167,139,250,0.6);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px;">Pro includes:</div>
+          ${['Bulk Renamer','Auto Backup (Local + Google Drive + Dropbox)','Daily Digest','Deploy Script','Launch Workspace','Company Assessment','Duplicate Detector','Startup Manager','Auto Form Filler'].map(f=>
+            `<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(240,240,255,0.8);padding:4px 0;border-bottom:1px solid rgba(124,58,237,0.1);">
+              <span style="color:#a78bfa;font-weight:700;">✓</span>${f}
+            </div>`).join('')}
+        </div>
+        <label class="modal-label">Enter your license key</label>
+        <input class="modal-input" id="lic-key" type="text" placeholder="NYX-XXXXXX-XXXXXX-XXXXXX" style="text-transform:uppercase;letter-spacing:0.1em;font-size:14px;"/>
+        <div id="lic-error" style="font-family:'DM Mono',monospace;font-size:11px;color:#f87171;margin-top:-10px;margin-bottom:14px;display:none;"></div>
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="lic-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="lic-activate">Activate Pro →</button>
+        </div>
+        <div style="text-align:center;margin-top:14px;font-family:'DM Mono',monospace;font-size:10px;color:rgba(240,240,255,0.3);">
+          Don't have a key? <span style="color:#a78bfa;cursor:pointer;" onclick="window.open('https://nyxon-server.onrender.com/pro')">Get Nyxon Pro →</span>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#lic-key');
+    const errorEl = overlay.querySelector('#lic-error');
+    const activBtn = overlay.querySelector('#lic-activate');
+    input.focus();
+    overlay.querySelector('#lic-cancel').onclick = () => { overlay.remove(); resolve(false); };
+    activBtn.onclick = async () => {
+      const key = input.value.trim();
+      if (!key) { errorEl.textContent='Please enter a key.'; errorEl.style.display='block'; return; }
+      activBtn.textContent='Activating…'; activBtn.disabled=true; errorEl.style.display='none';
+      const result = await window.nexus?.activateLicense(key);
+      if (result?.success) {
+        overlay.remove(); isPro=true; updateLicenseUI(); renderDashboard();
+        addLog('Nyxon Pro activated ✓','success'); showToast('Nyxon Pro unlocked! 🎉','success'); resolve(true);
+      } else {
+        errorEl.textContent=result?.error||'Activation failed.'; errorEl.style.display='block';
+        activBtn.textContent='Activate Pro →'; activBtn.disabled=false;
+      }
+    };
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') activBtn.click(); if(e.key==='Escape') overlay.querySelector('#lic-cancel').click(); });
+  });
+}
+
+// ── Launch ────────────────────────────────────────────────────────────────────
+function finishCard(id, auto, success) {
+  const card  = document.querySelector(`.auto-card[data-id="${id}"]`);
+  const btn   = document.getElementById(`btn-${id}`);
+  const prog  = document.getElementById(`prog-${id}`);
+  const badge = document.getElementById(`badge-${id}`);
+  if (!card) return;
+  prog.style.width='100%'; card.classList.remove('running'); btn.classList.remove('running-state');
+  btn.querySelector('.btn-label').textContent = auto.btnLabel;
+  btn.querySelector('.btn-arrow').textContent = '▶';
+  badge.textContent = success ? 'Done ✓' : 'Error';
+  running.delete(id);
+  if (success) { addLog(`${auto.name} completed.`,'success'); showToast(`${auto.name} — done`,'success'); }
+  else { showToast(`${auto.name} — failed`,'error'); }
+  setTimeout(() => {
+    card.classList.remove('success','error-state');
+    prog.style.width='0%'; badge.textContent=auto.badge;
+    badge.style='';
+  }, 3000);
+}
+
+async function launch(id) {
+  if (running.has(id)) return;
+  if (PRO_AUTOMATIONS.has(id) && !isPro) { await showUpgradeModal(); return; }
+  running.add(id);
+  const auto  = automations.find(a=>a.id===id);
+  const card  = document.querySelector(`.auto-card[data-id="${id}"]`);
+  const btn   = document.getElementById(`btn-${id}`);
+  const prog  = document.getElementById(`prog-${id}`);
+  const badge = document.getElementById(`badge-${id}`);
+  if (!card) { running.delete(id); return; }
+
+  card.classList.add('running'); btn.classList.add('running-state');
+  btn.querySelector('.btn-label').textContent='Running…';
+  badge.textContent='Running'; badge.style='background:rgba(255,255,255,0.15);color:#fff;';
+
+  const start = Date.now();
+  const progInterval = setInterval(()=>{ prog.style.width=Math.min(((Date.now()-start)/auto.duration)*100,92)+'%'; },50);
+
+  if (window.nexus) {
+    try {
+      const result = await ipcMap[id]();
+      clearInterval(progInterval);
+      if (!result) {
+        addLog(`${auto.name} cancelled.`);
+        card.classList.remove('running'); btn.classList.remove('running-state');
+        btn.querySelector('.btn-label').textContent=auto.btnLabel;
+        badge.textContent=auto.badge; badge.style='';
+        prog.style.width='0%'; running.delete(id); return;
+      }
+      (result.log||[]).forEach((line,i)=>setTimeout(()=>addLog(line,'default',auto.name),i*100));
+      setTimeout(()=>finishCard(id,auto,result.success),(result.log?.length||1)*100+200);
+    } catch (err) {
+      clearInterval(progInterval);
+      addLog('Error: '+err.message,'error',auto.name);
+      finishCard(id,auto,false);
+    }
+  } else {
+    const stepDelay = auto.duration/auto.steps.length;
+    auto.steps.forEach((step,i)=>setTimeout(()=>addLog(step,'default',auto.name),i*stepDelay));
+    setTimeout(()=>{ clearInterval(progInterval); finishCard(id,auto,true); },auto.duration);
+  }
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────────
+function addLog(msg, type='default', source='') {
+  ['log','log2'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    const empty=document.getElementById(id==='log'?'logEmpty':'logEmpty2');
+    if(empty) empty.style.display='none';
+    const t=new Date().toLocaleTimeString('en-US',{hour12:false});
+    const entry=document.createElement('div');
+    entry.className=`log-entry ${type}`;
+    entry.innerHTML=`<span class="log-time">${t}</span><span class="log-msg">${source?`[${source}] `:''}${msg}</span>`;
+    el.appendChild(entry); el.scrollTop=el.scrollHeight;
+  });
+}
+
+function clearLog() {
+  ['log','log2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML=`<div class="log-empty" id="${id==='log'?'logEmpty':'logEmpty2'}">No activity yet — launch an automation.</div>`;
+  });
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const container=document.getElementById('toasts');
+  const toast=document.createElement('div');
+  toast.className=`toast ${type}`;
+  toast.innerHTML=`<span>${type==='success'?'✓':'✕'}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(()=>{ toast.style.animation='toastOut 0.3s ease forwards'; setTimeout(()=>toast.remove(),300); },3500);
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+const defaultSettings = {deployScriptPath:'',backupLocation:'',backupTime:'02:00',notifyOnComplete:true,notifyOnError:true,notifyDailyDigest:true,startMinimized:false};
+function loadSettings() { try{const s=localStorage.getItem('nyxon-settings'); return s?{...defaultSettings,...JSON.parse(s)}:{...defaultSettings};}catch{return{...defaultSettings};} }
+function saveSettings(s) { localStorage.setItem('nyxon-settings',JSON.stringify(s)); }
+function initSettings() {
+  const s=loadSettings();
+  document.getElementById('st-deploy').value=s.deployScriptPath;
+  document.getElementById('st-backup-loc').value=s.backupLocation;
+  document.getElementById('st-backup-time').value=s.backupTime;
+  document.getElementById('toggle-complete').classList.toggle('on',s.notifyOnComplete);
+  document.getElementById('toggle-error').classList.toggle('on',s.notifyOnError);
+  document.getElementById('toggle-digest').classList.toggle('on',s.notifyDailyDigest);
+  document.getElementById('toggle-minimized').classList.toggle('on',s.startMinimized);
+}
+function commitSettings() {
+  saveSettings({deployScriptPath:document.getElementById('st-deploy').value.trim(),backupLocation:document.getElementById('st-backup-loc').value.trim(),backupTime:document.getElementById('st-backup-time').value||'02:00',notifyOnComplete:document.getElementById('toggle-complete').classList.contains('on'),notifyOnError:document.getElementById('toggle-error').classList.contains('on'),notifyDailyDigest:document.getElementById('toggle-digest').classList.contains('on'),startMinimized:document.getElementById('toggle-minimized').classList.contains('on')});
+  addLog('Settings saved ✓','success'); showToast('Settings saved','success');
+}
+function resetSettings() { if(!confirm('Reset all settings to defaults?')) return; localStorage.removeItem('nyxon-settings'); initSettings(); addLog('Settings reset.','info'); }
+async function undoOrganize() { if(!confirm('Undo last File Organize?')) return; const r=await window.nexus?.undoLastOrganize(); r?.success?showToast('Files restored ✓','success'):addLog(r?.log?.[0]||'Nothing to undo.','error'); }
+
+// ── Auto Updater ──────────────────────────────────────────────────────────────
+if (window.nexus) {
+  window.nexus.onUpdateAvailable?.((info) => showUpdateBanner(info.version));
+  window.nexus.onUpdateDownloaded?.(() => showToast('Update downloaded — restart to install.','success'));
+  window.nexus.onDownloadProgress?.((pct) => { const b=document.getElementById('update-fill'); if(b) b.style.width=pct+'%'; });
+  window.nexus.onTrayLaunch?.((id) => launch(id));
+  window.nexus.onTrayCheckUpdates?.(() => manualCheckUpdate());
+}
+
+function showUpdateBanner(version) {
+  const existing=document.getElementById('update-banner'); if(existing) existing.remove();
+  const banner=document.createElement('div'); banner.id='update-banner';
+  banner.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(15,10,30,0.95);border:1px solid rgba(99,102,241,0.4);border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:16px;z-index:500;box-shadow:0 8px 40px rgba(88,28,220,0.4);animation:slideUp 0.3s ease;min-width:360px;backdrop-filter:blur(20px);';
+  banner.innerHTML=`<div style="flex:1;"><div style="font-size:13px;font-weight:700;margin-bottom:3px;color:#fff;">⬆ Nyxon v${version} available</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.4);">A new version is ready to download.</div><div style="height:3px;background:rgba(255,255,255,0.1);border-radius:3px;margin-top:8px;overflow:hidden;"><div id="update-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#4f46e5);transition:width 0.3s;"></div></div></div><div style="display:flex;gap:8px;flex-shrink:0;"><button onclick="document.getElementById('update-banner').remove()" style="padding:6px 12px;border-radius:7px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.4);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;">Later</button><button id="update-dl-btn" onclick="startUpdateDownload()" style="padding:7px 16px;border-radius:7px;border:none;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;font-family:'DM Mono',monospace;font-size:10px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,0.4);">Download</button></div>`;
+  document.body.appendChild(banner);
+}
+
+function startUpdateDownload() { const btn=document.getElementById('update-dl-btn'); if(btn){btn.textContent='Downloading…';btn.disabled=true;} window.nexus?.downloadUpdate?.(); addLog('Downloading update…','info'); }
+async function manualCheckUpdate() { addLog('Checking for updates…','info'); const r=await window.nexus?.checkForUpdates?.(); addLog(r?.success?'Update check complete.':'Could not check for updates.',r?.success?'info':'error'); }
+
+// ── Onboarding ────────────────────────────────────────────────────────────────
+const ONBOARDING_KEY = 'nyxon-onboarding-complete';
+const onboardingSlides = [
+  {icon:'🌑',title:'Welcome to <span>NYXON</span>',type:'welcome',body:'Nyxon is a desktop automation launcher.\nBuilt to save you time — every single day.\n\nRun powerful automations with one click.'},
+  {icon:'⚡',title:'Your <span>automations</span>',type:'tour',body:'25 built-in automations across 4 categories.\nEach one does real work on your system — no coding required.'},
+  {icon:'🔓',titlipce:'Free vs <span>Pro</span>',type:'pro',body:'Some automations are free forever.\nPro features unlock the full power of Nyxon\nwith a one-time payment of GH₵17.'},
+  {icon:'🚀',title:"You're all <span>set</span>",type:'done',body:"Use the sidebar to navigate categories.\nClick any card to launch an automation.\nClick 🔒 on a Pro card to unlock it."}
+];
+let currentSlide=0;
+function shouldShowOnboarding(){return localStorage.getItem(ONBOARDING_KEY)!=='true';}
+function completeOnboarding(){localStorage.setItem(ONBOARDING_KEY,'true');const o=document.getElementById('ob-overlay');if(o){o.style.animation='fadeOut 0.3s ease forwards';setTimeout(()=>o.remove(),300);}addLog('Welcome to Nyxon! Use the sidebar to get started.','info');}
+function resetOnboarding(){localStorage.removeItem(ONBOARDING_KEY);}
+function renderSlide(index){
+  const slide=onboardingSlides[index];
+  const isFirst=index===0, isLast=index===onboardingSlides.length-1;
+  document.querySelectorAll('.ob-dot').forEach((d,i)=>{ d.className='ob-dot'+(i===index?' active':i<index?' done':''); });
+  document.getElementById('ob-icon').textContent=slide.icon;
+  document.getElementById('ob-title').innerHTML=slide.title;
+  document.getElementById('ob-body').innerHTML=slide.body.replace(/\n/g,'<br/>');
+  const featuresEl=document.getElementById('ob-features');
+  if(slide.type==='tour'){featuresEl.style.display='grid';featuresEl.innerHTML=[{icon:'🗂',name:'File Organizer',tier:'free'},{icon:'⚙',name:'System Flush',tier:'free'},{icon:'📡',name:'Internet Checker',tier:'free'},{icon:'✏',name:'Bulk Renamer',tier:'pro'},{icon:'🛡',name:'Auto Backup',tier:'pro'},{icon:'✉',name:'Daily Digest',tier:'pro'},{icon:'⟩_',name:'Deploy Script',tier:'pro'},{icon:'🌐',name:'Workspace',tier:'pro'}].map(f=>`<div class="ob-feature"><span>${f.icon}</span><span>${f.name}</span><span class="ob-badge ${f.tier}">${f.tier.toUpperCase()}</span></div>`).join('');}
+  else if(slide.type==='pro'){featuresEl.style.display='grid';featuresEl.innerHTML=`<div class="ob-feature" style="grid-column:1/-1;"><span>🆓</span><div><div style="font-weight:700;">Free forever</div><div style="font-family:'DM Mono',monospace;font-size:10px;opacity:0.5;">File Organizer, System Flush, Internet Checker + more</div></div><span class="ob-badge free" style="margin-left:auto;">FREE</span></div><div class="ob-feature" style="grid-column:1/-1;"><span>⭐</span><div><div style="font-weight:700;">Nyxon Pro — GH₵17</div><div style="font-family:'DM Mono',monospace;font-size:10px;opacity:0.5;">Bulk Renamer, Backup, Digest, Deploy, Workspace + more</div></div><span class="ob-badge pro" style="margin-left:auto;">PRO</span></div>`;}
+  else {featuresEl.style.display='none';}
+  document.getElementById('ob-back').style.display=isFirst?'none':'block';
+  document.getElementById('ob-skip').style.display=isLast?'none':'block';
+  document.getElementById('ob-next').textContent=isLast?"Let's go →":'Next →';
+}
+function showOnboarding(){
+  currentSlide=0;
+  const overlay=document.createElement('div'); overlay.className='onboarding-overlay'; overlay.id='ob-overlay';
+  overlay.innerHTML=`<div class="onboarding-card"><div class="ob-dots">${onboardingSlides.map(()=>'<div class="ob-dot"></div>').join('')}</div><span class="ob-icon" id="ob-icon"></span><div class="ob-title" id="ob-title"></div><div class="ob-body" id="ob-body"></div><div id="ob-features" style="display:none;" class="ob-features"></div><div class="ob-nav"><button class="ob-skip" id="ob-skip" onclick="completeOnboarding()">Skip</button><div style="display:flex;gap:10px;"><button class="ob-back" id="ob-back" onclick="prevSlide()">← Back</button><button class="ob-next" id="ob-next" onclick="nextSlide()">Next →</button></div></div></div>`;
+  document.body.appendChild(overlay); renderSlide(0);
+}
+function nextSlide(){if(currentSlide<onboardingSlides.length-1){currentSlide++;renderSlide(currentSlide);}else completeOnboarding();}
+function prevSlide(){if(currentSlide>0){currentSlide--;renderSlide(currentSlide);}}
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function showRenamerModal(){return new Promise((resolve)=>{const o=document.createElement('div');o.className='modal-overlay';o.innerHTML=`<div class="modal"><div class="modal-title">Bulk Renamer</div><div class="modal-sub">Files will be renamed: Base Name 1, Base Name 2…</div><label class="modal-label">Base name</label><input class="modal-input" id="modal-basename" type="text" value="Item" autocomplete="off"/><label class="modal-label">Start number</label><input class="modal-input" id="modal-startnum" type="number" value="1" min="0"/><div class="modal-row"><button class="modal-btn cancel" id="modal-cancel">Cancel</button><button class="modal-btn confirm" id="modal-confirm">Choose Folder →</button></div></div>`;document.body.appendChild(o);const input=o.querySelector('#modal-basename');input.focus();input.select();o.querySelector('#modal-cancel').onclick=()=>{o.remove();resolve(null);};o.querySelector('#modal-confirm').onclick=()=>{const baseName=input.value.trim()||'Item';const startNum=parseInt(o.querySelector('#modal-startnum').value)||1;o.remove();resolve({baseName,startNum});};input.addEventListener('keydown',e=>{if(e.key==='Enter')o.querySelector('#modal-confirm').click();if(e.key==='Escape')o.querySelector('#modal-cancel').click();});});}
+async function launchRenamer(){const inputs=await showRenamerModal();if(!inputs)return null;return window.nexus?.runBulkRenamer(inputs.baseName,inputs.startNum);}
+
+async function launchBackup(){const result=await showBackupModal();if(!result)return null;if(result.type==='gdrive'){const status=await window.nexus?.gdriveStatus();if(!status?.connected){addLog('Google Drive not connected.','error');return{success:false,log:['Google Drive not connected.']};}const src=await window.nexus?.runBackup(null,null,result.time,'gdrive-pick');if(!src)return null;return window.nexus?.gdriveUpload(src.srcDir);}if(result.type==='dropbox'){const status=await window.nexus?.dropboxStatus();if(!status?.connected){addLog('Dropbox not connected.','error');return{success:false,log:['Dropbox not connected.']};}const src=await window.nexus?.runBackup(null,null,result.time,'gdrive-pick');if(!src)return null;return window.nexus?.dropboxUpload(src.srcDir);}return window.nexus?.runBackup(result.source,result.destination,result.time,result.type);}
+function showBackupModal(){return new Promise(async(resolve)=>{const g=window.nexus?await window.nexus.gdriveStatus():{connected:false};const d=window.nexus?await window.nexus.dropboxStatus():{connected:false};const o=document.createElement('div');o.className='modal-overlay';o.innerHTML=`<div class="modal" style="width:460px;"><div class="modal-title">Auto Backup</div><div class="modal-sub">Configure your backup source, destination, and schedule.</div><label class="modal-label">Destination</label><select class="modal-input" id="backup-type" style="cursor:pointer;" onchange="handleBackupTypeChange(this.value)"><option value="folder">Local Folder</option><option value="drive">External Drive</option><option value="gdrive">Google Drive</option><option value="dropbox">Dropbox</option><option value="onedrive">OneDrive (coming soon)</option></select><div id="gdrive-section" style="display:none;margin-bottom:16px;"><div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:10px;padding:12px;"><div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:13px;font-weight:600;color:var(--text);">Google Drive</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:${g.connected?'#34d399':'rgba(240,240,255,0.3)'};" id="gdrive-status-text">${g.connected?'✓ Connected':'✗ Not connected'}</div></div><button id="gdrive-connect-btn" onclick="connectGoogleDrive()" style="font-family:'DM Mono',monospace;font-size:10px;padding:5px 12px;border-radius:7px;cursor:pointer;background:${g.connected?'transparent':'rgba(124,58,237,0.2)'};border:1px solid rgba(124,58,237,0.3);color:#a78bfa;font-weight:700;">${g.connected?'Reconnect':'Connect'}</button></div><div id="gdrive-code-section" style="display:none;margin-top:10px;"><label class="modal-label">Paste code from browser</label><input class="modal-input" id="gdrive-code-input" type="text" placeholder="Paste authorization code…" style="margin-bottom:8px;"/><button onclick="submitGdriveCode()" style="width:100%;padding:8px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;">Authorize →</button></div></div></div><div id="dropbox-section" style="display:none;margin-bottom:16px;"><div style="background:rgba(0,97,255,0.08);border:1px solid rgba(0,97,255,0.2);border-radius:10px;padding:12px;"><div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:13px;font-weight:600;color:var(--text);">Dropbox</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:${d.connected?'#34d399':'rgba(240,240,255,0.3)'};" id="dropbox-status-text">${d.connected?'✓ Connected':'✗ Not connected'}</div></div><button id="dropbox-connect-btn" onclick="connectDropbox()" style="font-family:'DM Mono',monospace;font-size:10px;padding:5px 12px;border-radius:7px;cursor:pointer;background:rgba(0,97,255,0.15);border:1px solid rgba(0,97,255,0.3);color:#60a5fa;font-weight:700;">${d.connected?'Reconnect':'Connect'}</button></div><div id="dropbox-code-section" style="display:none;margin-top:10px;"><label class="modal-label">Paste code from browser</label><input class="modal-input" id="dropbox-code-input" type="text" placeholder="Paste authorization code…" style="margin-bottom:8px;"/><button onclick="submitDropboxCode()" style="width:100%;padding:8px;border-radius:8px;background:#0061ff;border:none;color:#fff;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;">Authorize →</button></div></div></div><label class="modal-label">Run backup at (24hr)</label><input class="modal-input" id="backup-time" type="time" value="02:00"/><div class="modal-row"><button class="modal-btn cancel" id="backup-cancel">Cancel</button><button class="modal-btn confirm" id="backup-confirm">Choose Source →</button></div></div>`;document.body.appendChild(o);o.querySelector('#backup-cancel').onclick=()=>{o.remove();resolve(null);};o.querySelector('#backup-confirm').onclick=()=>{const type=o.querySelector('#backup-type').value;if(type==='onedrive'){alert('OneDrive coming soon!');return;}const time=o.querySelector('#backup-time').value;o.remove();resolve({type,time,source:null,destination:null});};});}
+function handleBackupTypeChange(v){document.getElementById('gdrive-section').style.display=v==='gdrive'?'block':'none';document.getElementById('dropbox-section').style.display=v==='dropbox'?'block':'none';}
+async function connectGoogleDrive(){const btn=document.getElementById('gdrive-connect-btn');btn.textContent='Opening…';const r=await window.nexus?.gdriveAuthUrl();if(r?.url){window.open(r.url);document.getElementById('gdrive-code-section').style.display='block';btn.textContent='Reconnect';}else btn.textContent='Error — retry';}
+async function submitGdriveCode(){const input=document.getElementById('gdrive-code-input');const code=input.value.trim();if(!code){input.style.borderColor='#f87171';return;}const r=await window.nexus?.gdriveExchange(code);if(r?.success){document.getElementById('gdrive-status-text').textContent='✓ Connected';document.getElementById('gdrive-status-text').style.color='#34d399';document.getElementById('gdrive-code-section').style.display='none';addLog('Google Drive connected ✓','success');showToast('Google Drive connected!','success');}else{input.style.borderColor='#f87171';addLog('Google Drive auth failed.','error');}}
+async function connectDropbox(){const btn=document.getElementById('dropbox-connect-btn');btn.textContent='Opening…';const r=await window.nexus?.dropboxAuthUrl();if(r?.url){window.open(r.url);document.getElementById('dropbox-code-section').style.display='block';btn.textContent='Reconnect';}else btn.textContent='Error — retry';}
+async function submitDropboxCode(){const input=document.getElementById('dropbox-code-input');const code=input.value.trim();if(!code){input.style.borderColor='#f87171';return;}const r=await window.nexus?.dropboxExchange(code);if(r?.success){document.getElementById('dropbox-status-text').textContent='✓ Connected';document.getElementById('dropbox-status-text').style.color='#34d399';document.getElementById('dropbox-code-section').style.display='none';addLog('Dropbox connected ✓','success');showToast('Dropbox connected!','success');}else{input.style.borderColor='#f87171';addLog('Dropbox auth failed.','error');}}
+
+async function launchAssessment(){const info=await showAssessmentModal();if(!info)return null;return window.nexus?.runAssessment(info.company,info.email,info.contact);}
+function showAssessmentModal(){return new Promise((resolve)=>{const o=document.createElement('div');o.className='modal-overlay';o.innerHTML=`<div class="modal"><div class="modal-title">Company Assessment</div><div class="modal-sub">A full system report will be generated and sent to Nyxon.</div><label class="modal-label">Company name</label><input class="modal-input" id="ass-company" type="text" placeholder="Acme Corp"/><label class="modal-label">Contact email</label><input class="modal-input" id="ass-email" type="email" placeholder="you@company.com"/><label class="modal-label">Contact person</label><input class="modal-input" id="ass-contact" type="text" placeholder="John Smith"/><div class="modal-row"><button class="modal-btn cancel" id="ass-cancel">Cancel</button><button class="modal-btn confirm" id="ass-confirm">Run Assessment →</button></div></div>`;document.body.appendChild(o);o.querySelector('#ass-company').focus();o.querySelector('#ass-cancel').onclick=()=>{o.remove();resolve(null);};o.querySelector('#ass-confirm').onclick=()=>{const company=o.querySelector('#ass-company').value.trim();const email=o.querySelector('#ass-email').value.trim();const contact=o.querySelector('#ass-contact').value.trim();if(!company||!email){o.querySelector('#ass-company').style.borderColor='#f87171';return;}o.remove();resolve({company,email,contact});};});}
+
+async function launchWorkspace(){const result=await window.nexus?.runOpenUrls(null);if(!result)return null;const workspaces=result.workspaces||{};const action=await showWorkspaceModal(workspaces);if(!action)return null;if(action.type==='launch')return window.nexus?.runOpenUrls(action.name);if(action.type==='save')return window.nexus?.saveWorkspace(action.name,action.urls);if(action.type==='delete'){await window.nexus?.deleteWorkspace(action.name);return{success:true,log:[`Workspace "${action.name}" deleted.`]};}}
+function showWorkspaceModal(workspaces){return new Promise((resolve)=>{const names=Object.keys(workspaces);const o=document.createElement('div');o.className='modal-overlay';o.innerHTML=`<div class="modal" style="width:500px;"><div class="modal-title">Workspace Launcher</div><div class="modal-sub">Launch a saved workspace or create a new one.</div>${names.length>0?`<label class="modal-label">Saved workspaces</label><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">${names.map(name=>`<div style="display:flex;align-items:center;gap:8px;"><button class="modal-btn confirm" style="flex:1;padding:8px 12px;font-size:10px;" onclick="resolveWorkspace('launch','${name}')">▶ ${name} <span style="opacity:0.5;">(${workspaces[name].length} URLs)</span></button><button class="modal-btn cancel" style="width:36px;padding:8px;color:#f87171;border-color:rgba(248,113,113,0.3);" onclick="resolveWorkspace('delete','${name}')">✕</button></div>`).join('')}</div>`:''}<label class="modal-label">New workspace name</label><input class="modal-input" id="ws-name" type="text" placeholder="Work, Dev, Personal…"/><textarea class="modal-input" id="ws-urls" rows="4" style="resize:vertical;font-family:'DM Mono',monospace;font-size:11px;line-height:1.8;" placeholder="One URL per line:&#10;https://github.com&#10;https://figma.com"></textarea><div class="modal-row"><button class="modal-btn cancel" id="ws-cancel">Cancel</button><button class="modal-btn confirm" id="ws-save">Save & Launch →</button></div></div>`;document.body.appendChild(o);window.resolveWorkspace=(type,name)=>{delete window.resolveWorkspace;o.remove();resolve({type,name,urls:workspaces[name]||[]});};o.querySelector('#ws-cancel').onclick=()=>{delete window.resolveWorkspace;o.remove();resolve(null);};o.querySelector('#ws-save').onclick=()=>{const name=o.querySelector('#ws-name').value.trim();const urls=o.querySelector('#ws-urls').value.trim().split('\n').map(u=>u.trim()).filter(u=>u.startsWith('http'));if(!name){o.querySelector('#ws-name').style.borderColor='#f87171';return;}if(!urls.length){o.querySelector('#ws-urls').style.borderColor='#f87171';return;}delete window.resolveWorkspace;o.remove();resolve({type:'save',name,urls});};});}
+
+async function launchFeedback(){const data=await showFeedbackModal();if(!data)return null;return window.nexus?.runFeedback(data);}
+function showFeedbackModal(){return new Promise((resolve)=>{const o=document.createElement('div');o.className='modal-overlay';o.innerHTML=`<div class="modal" style="width:480px;"><div class="modal-title">Rate Nyxon</div><div class="modal-sub">Your honest feedback helps us improve.</div><label class="modal-label">Overall rating</label><div id="star-row" style="display:flex;gap:10px;margin-bottom:18px;">${[1,2,3,4,5].map(n=>`<span data-star="${n}" style="font-size:28px;cursor:pointer;opacity:0.3;transition:opacity 0.15s;">★</span>`).join('')}</div><label class="modal-label">Ease of use</label><select class="modal-input" id="fb-ease"><option value="very_easy">Very easy</option><option value="easy">Easy</option><option value="neutral">Neutral</option><option value="difficult">Difficult</option><option value="very_difficult">Very difficult</option></select><label class="modal-label">Most used automation</label><select class="modal-input" id="fb-fav"><option value="file_organizer">File Organizer</option><option value="system_flush">System Flush</option><option value="internet_checker">Internet Checker</option><option value="bulk_renamer">Bulk Renamer</option><option value="backup">Auto Backup</option><option value="deploy_script">Deploy Script</option><option value="workspace">Launch Workspace</option></select><label class="modal-label">Would you recommend Nyxon?</label><select class="modal-input" id="fb-recommend"><option value="definitely">Definitely yes</option><option value="probably">Probably yes</option><option value="not_sure">Not sure</option><option value="probably_not">Probably not</option><option value="no">No</option></select><label class="modal-label">Other thoughts (optional)</label><textarea class="modal-input" id="fb-comments" rows="3" style="resize:vertical;font-family:'DM Mono',monospace;font-size:11px;line-height:1.6;" placeholder="What could be better?"></textarea><div class="modal-row"><button class="modal-btn cancel" id="fb-cancel">Cancel</button><button class="modal-btn confirm" id="fb-submit">Submit →</button></div></div>`;document.body.appendChild(o);let selectedStar=0;const stars=o.querySelectorAll('[data-star]');stars.forEach(star=>{star.addEventListener('mouseover',()=>{const n=parseInt(star.dataset.star);stars.forEach(s=>s.style.opacity=parseInt(s.dataset.star)<=n?'1':'0.3');});star.addEventListener('mouseout',()=>{stars.forEach(s=>s.style.opacity=parseInt(s.dataset.star)<=selectedStar?'1':'0.3');});star.addEventListener('click',()=>{selectedStar=parseInt(star.dataset.star);stars.forEach(s=>s.style.opacity=parseInt(s.dataset.star)<=selectedStar?'1':'0.3');});});o.querySelector('#fb-cancel').onclick=()=>{o.remove();resolve(null);};o.querySelector('#fb-submit').onclick=()=>{const data={rating:selectedStar||0,ease:o.querySelector('#fb-ease').value,favourite:o.querySelector('#fb-fav').value,recommend:o.querySelector('#fb-recommend').value,comments:o.querySelector('#fb-comments').value.trim(),timestamp:new Date().toISOString()};o.remove();resolve(data);};});}
+
+async function launchContact(){const data=await showContactModal();if(!data)return null;return window.nexus?.runContact(data);}
+function showContactModal(){return new Promise((resolve)=>{const o=document.createElement('div');o.className='modal-overlay';o.innerHTML=`<div class="modal"><div class="modal-title">Contact Nyxon</div><div class="modal-sub">We'll get back to you as soon as possible.</div><label class="modal-label">Your name</label><input class="modal-input" id="ct-name" type="text" placeholder="Jane Smith"/><label class="modal-label">Your email</label><input class="modal-input" id="ct-email" type="email" placeholder="you@company.com"/><label class="modal-label">Subject</label><select class="modal-input" id="ct-subject"><option value="support">Technical support</option><option value="licensing">Licensing</option><option value="partnership">Partnership</option><option value="custom">Custom automation</option><option value="other">Other</option></select><label class="modal-label">Message</label><textarea class="modal-input" id="ct-message" rows="4" style="resize:vertical;font-family:'DM Mono',monospace;font-size:11px;line-height:1.6;" placeholder="Tell us what you need…"></textarea><div class="modal-row"><button class="modal-btn cancel" id="ct-cancel">Cancel</button><button class="modal-btn confirm" id="ct-send">Send →</button></div></div>`;document.body.appendChild(o);o.querySelector('#ct-name').focus();o.querySelector('#ct-cancel').onclick=()=>{o.remove();resolve(null);};o.querySelector('#ct-send').onclick=()=>{const email=o.querySelector('#ct-email').value.trim();if(!email){o.querySelector('#ct-email').style.borderColor='#f87171';return;}const data={name:o.querySelector('#ct-name').value.trim(),email,subject:o.querySelector('#ct-subject').value,message:o.querySelector('#ct-message').value.trim(),timestamp:new Date().toISOString()};o.remove();resolve(data);};});}
+
+async function launchDuplicateDetector(){const o=document.createElement('div');o.className='modal-overlay';o.innerHTML=`<div class="modal"><div class="modal-title">Duplicate Detector</div><div class="modal-sub">Find exact duplicate files to free up disk space.</div><label class="modal-label">Action</label><select class="modal-input" id="dup-action"><option value="report">Report only (safe)</option><option value="delete">Delete duplicates (keep newest)</option></select><div class="modal-row"><button class="modal-btn cancel" id="dup-cancel">Cancel</button><button class="modal-btn confirm" id="dup-start">Scan Folder →</button></div></div>`;document.body.appendChild(o);return new Promise(resolve=>{o.querySelector('#dup-cancel').onclick=()=>{o.remove();resolve(null);};o.querySelector('#dup-start').onclick=()=>{const action=o.querySelector('#dup-action').value;o.remove();resolve(window.nexus?.runDuplicateDetector(null,action));};});}
+
+async function launchStartupManager(){const result=await window.nexus?.runStartupManager('list');if(!result)return null;return new Promise((resolve)=>{const o=document.createElement('div');o.className='modal-overlay';const items=result.startupItems||[];const rows=items.length>0?items.map((item,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><div><div style="font-size:13px;font-weight:600;color:var(--text);">${item.name}</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(240,240,255,0.3);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.path||item.command||'—'}</div></div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span style="font-family:'DM Mono',monospace;font-size:9px;color:${item.enabled?'#34d399':'rgba(240,240,255,0.3)'};padding:2px 6px;border-radius:4px;background:${item.enabled?'rgba(52,211,153,0.1)':'rgba(255,255,255,0.05)'};">${item.enabled?'Enabled':'Disabled'}</span><button onclick="toggleStartupItem(${i},${item.enabled})" data-index="${i}" style="padding:5px 12px;border-radius:7px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;font-weight:700;border:1px solid;background:${item.enabled?'transparent':'rgba(52,211,153,0.15)'};color:${item.enabled?'#f87171':'#34d399'};border-color:${item.enabled?'rgba(248,113,113,0.3)':'rgba(52,211,153,0.3)'};">${item.enabled?'Disable':'Enable'}</button></div></div>`).join(''):`<div style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(240,240,255,0.3);padding:24px 0;text-align:center;">No startup entries found. Results vary by platform.</div>`;o.innerHTML=`<div class="modal" style="width:560px;max-height:80vh;overflow-y:auto;"><div class="modal-title">🚀 Startup Manager</div><div class="modal-sub">Manage which apps launch at startup. Results may vary by platform.</div><div style="background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.15);border-radius:10px;padding:0 16px;margin-bottom:18px;">${rows}</div><div class="modal-row"><button class="modal-btn cancel" id="startup-close">Close</button></div></div>`;document.body.appendChild(o);window._startupItems=items;window._startupOverlay=o;window._startupResolve=resolve;o.querySelector('#startup-close').onclick=()=>{o.remove();delete window._startupItems;delete window._startupOverlay;delete window._startupResolve;resolve({success:true,log:['Startup manager closed.']});};});}
+
+async function toggleStartupItem(index,currentlyEnabled){const items=window._startupItems;if(!items||!items[index])return;const item=items[index];const action=currentlyEnabled?'disable':'enable';const result=await window.nexus?.runStartupManager(action,item.name,item.path||item.command,item.type);if(result?.success){items[index].enabled=!currentlyEnabled;addLog(`${item.name} ${action}d at startup.`,'success');showToast(`${item.name} ${action}d ✓`,'success');const btn=window._startupOverlay?.querySelector(`[data-index="${index}"]`);const newEnabled=!currentlyEnabled;if(btn){btn.textContent=newEnabled?'Disable':'Enable';btn.style.background=newEnabled?'transparent':'rgba(52,211,153,0.15)';btn.style.color=newEnabled?'#f87171':'#34d399';btn.style.borderColor=newEnabled?'rgba(248,113,113,0.3)':'rgba(52,211,153,0.3)';btn.setAttribute('onclick',`toggleStartupItem(${index},${newEnabled})`);}}else{addLog('Failed to '+action+' '+item.name,'error');}}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+initTheme();
+initSettings();
+renderDashboard();
+initLicense();
+addLog('Nyxon Launcher initialised.','info');
+addLog('25 automations across 4 categories ready.','info');
+if(shouldShowOnboarding()) setTimeout(showOnboarding,600);
+</script>
+</body>
+</html>
