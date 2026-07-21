@@ -33,3 +33,4 @@ Status: [x] Complete (verified 2026-07-02)
   notification shown
 - Remaining work is local-only: run `npm start` to click through it once
   (form validation, preview, and all three export formats), then build
+

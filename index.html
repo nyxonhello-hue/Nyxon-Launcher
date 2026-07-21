@@ -1289,6 +1289,46 @@ const automations = [
   desc:'See every installed app with its size, and uninstall the ones you don\'t need — safely, using the OS\'s own uninstaller.',
   steps:['Scanning installed apps…','Ready.']
 },
+{
+  id:'mediaconverter', type:'mediaconverter', icon:'🎬', name:'Video/Audio Converter', badge:'Convert',
+  category:'File Management', tier:'pro', duration:5000,
+  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+  accent:'#93c5fd', glow:'#60a5fa',
+  info:['MP4 · WEBM · MP3 · WAV','Extract audio','Batch-friendly'],
+  btnLabel:'Convert Media',
+  desc:'Convert video and audio files between formats, or extract audio from a video.',
+  steps:['Analyzing file…','Converting…','Saving…','Done.']
+},
+{
+  id:'videocompressor', type:'videocompressor', icon:'📉', name:'Video Compressor', badge:'Shrink',
+  category:'File Management', tier:'pro', duration:5000,
+  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+  accent:'#93c5fd', glow:'#60a5fa',
+  info:['Adjustable quality','Keeps format','Great for email/upload limits'],
+  btnLabel:'Compress Video',
+  desc:'Shrink a video file\'s size while keeping it watchable — pick your quality/size tradeoff.',
+  steps:['Analyzing video…','Compressing…','Saving…','Done.']
+},
+{
+  id:'pdfmerge', type:'pdfmerge', icon:'🔗', name:'Merge PDFs', badge:'Combine',
+  category:'File Management', tier:'pro', duration:2500,
+  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+  accent:'#93c5fd', glow:'#60a5fa',
+  info:['Combine multiple PDFs','Keeps page order','One click'],
+  btnLabel:'Merge PDFs',
+  desc:'Combine two or more PDFs into a single document, in the order you select them.',
+  steps:['Selecting files…','Merging…','Saving…','Done.']
+},
+{
+  id:'pdfprotect', type:'pdfprotect', icon:'🔒', name:'PDF Watermark & Protect', badge:'Secure',
+  category:'File Management', tier:'pro', duration:3000,
+  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+  accent:'#93c5fd', glow:'#60a5fa',
+  info:['Add watermark text','Password protect','Both or either'],
+  btnLabel:'Protect PDF',
+  desc:'Stamp a watermark across every page and/or lock a PDF with a password.',
+  steps:['Opening PDF…','Applying watermark…','Encrypting…','Done.']
+},
 ];
 
 const PRO_AUTOMATIONS = new Set(automations.filter(a=>a.tier==='pro').map(a=>a.id));
@@ -1322,6 +1362,10 @@ const ipcMap = {
   clipboardhistory: () => launchClipboardHistory(),
   appuninstaller: () => launchAppUninstaller(),
   pwgen: () => launchPasswordGenerator(),
+  mediaconverter: () => launchMediaConverter(),
+  videocompressor: () => launchVideoCompressor(),
+  pdfmerge: () => window.nexus?.runPdfMerge(),
+  pdfprotect: () => launchPdfProtect(),
 };
 
 // ── Card Builder ──────────────────────────────────────────────────────────────
@@ -1647,6 +1691,65 @@ function selectImg2pdfFit(val) {
   window._i2pFit = val;
   ['fit','a4','letter'].forEach(v => {
     const label = document.getElementById(`i2p-fit-label-${v}`);
+    if (!label) return;
+    if (v === val) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+async function launchVideoCompressor() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:460px;">
+        <div class="modal-title">📉 Video Compressor</div>
+        <div class="modal-sub">Higher compression = smaller file, lower quality.</div>
+
+        <label class="modal-label">Compression level</label>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          ${[['23','Light'],['28','Balanced'],['34','Maximum']].map(([val,label], i) => `
+            <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+              padding:9px;border-radius:8px;border:1px solid ${i===1?'rgba(124,58,237,0.4)':'var(--border)'};
+              background:${i===1?'rgba(124,58,237,0.15)':'transparent'};
+              color:${i===1?'#c084fc':'var(--text3)'};
+              font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;"
+              id="vc-level-label-${val}"
+              onclick="selectVideoCompressLevel('${val}')">
+              <input type="radio" name="vc-level" value="${val}" ${i===1?'checked':''} style="display:none;"/>
+              ${label}
+            </label>`).join('')}
+        </div>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="vc-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="vc-confirm">Choose File & Compress →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    window._vcLevel = '28';
+
+    overlay.querySelector('#vc-cancel').onclick = () => { overlay.remove(); resolve(null); };
+    overlay.querySelector('#vc-confirm').onclick = () => {
+      const crf = window._vcLevel;
+      overlay.remove();
+      resolve(window.nexus?.runVideoCompressor({ crf }));
+    };
+  });
+}
+
+function selectVideoCompressLevel(val) {
+  window._vcLevel = val;
+  ['23','28','34'].forEach(v => {
+    const label = document.getElementById(`vc-level-label-${v}`);
     if (!label) return;
     if (v === val) {
       label.style.background = 'rgba(124,58,237,0.15)';
@@ -2004,6 +2107,45 @@ async function launchPasswordGenerator() {
   });
 }
 
+async function launchPdfProtect() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:460px;">
+        <div class="modal-title">🔒 PDF Watermark & Protect</div>
+        <div class="modal-sub">Fill in what you need — leave a section blank to skip it.</div>
+
+        <label class="modal-label">Watermark text (optional)</label>
+        <input class="modal-input" id="pp-watermark" type="text" placeholder="CONFIDENTIAL"/>
+
+        <label class="modal-label">Password to open the PDF (optional)</label>
+        <input class="modal-input" id="pp-password" type="text" placeholder="Leave blank to skip"/>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="pp-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="pp-confirm">Choose PDF & Apply →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#pp-cancel').onclick = () => { overlay.remove(); resolve(null); };
+    overlay.querySelector('#pp-confirm').onclick = () => {
+      const watermark = overlay.querySelector('#pp-watermark').value.trim();
+      const password = overlay.querySelector('#pp-password').value.trim();
+
+      if (!watermark && !password) {
+        alert('Enter a watermark, a password, or both.');
+        return;
+      }
+
+      overlay.remove();
+      resolve(window.nexus?.runPdfProtect({ watermark, password }));
+    };
+  });
+}
+
 async function launchQrCode() {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -2216,6 +2358,65 @@ function selectFileSplitterMode(val) {
   if (confirmBtn) confirmBtn.textContent = val === 'split' ? 'Choose File →' : 'Choose Chunks →';
   ['split','join'].forEach(v => {
     const label = document.getElementById(`fs-mode-label-${v}`);
+    if (!label) return;
+    if (v === val) {
+      label.style.background = 'rgba(124,58,237,0.15)';
+      label.style.borderColor = 'rgba(124,58,237,0.4)';
+      label.style.color = '#c084fc';
+    } else {
+      label.style.background = 'transparent';
+      label.style.borderColor = 'var(--border)';
+      label.style.color = 'var(--text3)';
+    }
+  });
+}
+
+async function launchMediaConverter() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:460px;">
+        <div class="modal-title">🎬 Video/Audio Converter</div>
+        <div class="modal-sub">Choose the output format. You'll pick the source file next.</div>
+
+        <label class="modal-label">Convert to</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+          ${[['mp4','MP4'],['webm','WEBM'],['mp3','MP3 (audio only)'],['wav','WAV (audio only)']].map(([val,label], i) => `
+            <label style="flex:1;min-width:100px;display:flex;align-items:center;justify-content:center;gap:6px;
+              padding:9px;border-radius:8px;border:1px solid ${i===0?'rgba(124,58,237,0.4)':'var(--border)'};
+              background:${i===0?'rgba(124,58,237,0.15)':'transparent'};
+              color:${i===0?'#c084fc':'var(--text3)'};
+              font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;"
+              id="mc-fmt-label-${val}"
+              onclick="selectMediaFormat('${val}')">
+              <input type="radio" name="mc-format" value="${val}" ${i===0?'checked':''} style="display:none;"/>
+              ${label}
+            </label>`).join('')}
+        </div>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="mc-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="mc-confirm">Choose File & Convert →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    window._mcFormat = 'mp4';
+
+    overlay.querySelector('#mc-cancel').onclick = () => { overlay.remove(); resolve(null); };
+    overlay.querySelector('#mc-confirm').onclick = () => {
+      const format = window._mcFormat;
+      overlay.remove();
+      resolve(window.nexus?.runMediaConverter({ format }));
+    };
+  });
+}
+
+function selectMediaFormat(val) {
+  window._mcFormat = val;
+  ['mp4','webm','mp3','wav'].forEach(v => {
+    const label = document.getElementById(`mc-fmt-label-${v}`);
     if (!label) return;
     if (v === val) {
       label.style.background = 'rgba(124,58,237,0.15)';

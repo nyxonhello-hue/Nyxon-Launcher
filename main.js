@@ -2943,3 +2943,249 @@ ipcMain.handle('run-password-generator', async (event, config = {}) => {
 
   return { success: true, passwords };
 });
+
+// ─── Video/Audio Converter ─────────────────────────────────────────────────
+ipcMain.handle('run-media-converter', async (event, config = {}) => {
+  const log = [];
+  const win = BrowserWindow.getFocusedWindow();
+  const format = ['mp4','webm','mp3','wav'].includes(config.format) ? config.format : 'mp4';
+
+  const result = await dialog.showOpenDialog(win, {
+    title: 'Select a video or audio file',
+    defaultPath: os.homedir(),
+    properties: ['openFile'],
+    filters: [{ name: 'Media', extensions: ['mp4','mov','mkv','avi','webm','mp3','wav','m4a','flac'] }]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false, log, error: 'No file selected.' };
+  }
+
+  const srcPath = result.filePaths[0];
+  const baseName = path.basename(srcPath, path.extname(srcPath));
+  const downloadsPath = path.join(os.homedir(), 'Downloads');
+  const outPath = path.join(downloadsPath, `${baseName}.${format}`);
+
+  log.push(`Converting: ${path.basename(srcPath)} → ${format.toUpperCase()}`);
+
+  let ffmpegPath = require('ffmpeg-static');
+  if (ffmpegPath.includes('app.asar')) {
+    ffmpegPath = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
+  }
+  const isAudioOnly = format === 'mp3' || format === 'wav';
+  const args = ['-i', srcPath, '-y'];
+  if (isAudioOnly) {
+    args.push('-vn');
+    args.push('-c:a', format === 'mp3' ? 'libmp3lame' : 'pcm_s16le');
+  } else if (format === 'webm') {
+    args.push('-c:v', 'libvpx', '-c:a', 'libvorbis');
+  } else {
+    args.push('-c:v', 'libx264', '-c:a', 'aac');
+  }
+  args.push(outPath);
+
+  try {
+    await new Promise((resolve, reject) => {
+      const proc = require('child_process').spawn(ffmpegPath, args);
+      let stderr = '';
+      proc.stderr.on('data', d => { stderr += d.toString(); });
+      proc.on('close', code => code === 0 ? resolve() : reject(new Error(stderr.slice(-400))));
+    });
+
+    log.push(`─── Done — saved ${path.basename(outPath)} ✓`);
+    shell.openPath(downloadsPath);
+    new Notification({ title: 'Nyxon — Media Converter', body: `Converted to ${format.toUpperCase()}` }).show();
+    return { success: true, log, outputPath: outPath };
+
+  } catch (err) {
+    log.push(`Error: ${err.message}`);
+    return { success: false, log, error: err.message };
+  }
+});
+// ─── Video Compressor ──────────────────────────────────────────────────────
+ipcMain.handle('run-video-compressor', async (event, config = {}) => {
+  const log = [];
+  const win = BrowserWindow.getFocusedWindow();
+  const crf = ['23','28','34'].includes(config.crf) ? config.crf : '28';
+
+  const result = await dialog.showOpenDialog(win, {
+    title: 'Select a video to compress',
+    defaultPath: os.homedir(),
+    properties: ['openFile'],
+    filters: [{ name: 'Video', extensions: ['mp4','mov','mkv','avi','webm'] }]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false, log, error: 'No file selected.' };
+  }
+
+  const srcPath = result.filePaths[0];
+  const originalSize = fs.statSync(srcPath).size;
+  const baseName = path.basename(srcPath, path.extname(srcPath));
+  const downloadsPath = path.join(os.homedir(), 'Downloads');
+  const outPath = path.join(downloadsPath, `${baseName}-compressed.mp4`);
+
+  log.push(`Compressing: ${path.basename(srcPath)} (${(originalSize/1024/1024).toFixed(1)} MB)`);
+
+  let ffmpegPath = require('ffmpeg-static');
+  if (ffmpegPath.includes('app.asar')) {
+    ffmpegPath = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
+  }
+  const args = ['-i', srcPath, '-y', '-c:v', 'libx264', '-crf', crf, '-preset', 'medium', '-c:a', 'aac', '-b:a', '128k', outPath];
+
+  try {
+    await new Promise((resolve, reject) => {
+      const proc = require('child_process').spawn(ffmpegPath, args);
+      let stderr = '';
+      proc.stderr.on('data', d => { stderr += d.toString(); });
+      proc.on('close', code => code === 0 ? resolve() : reject(new Error(stderr.slice(-400))));
+    });
+
+    const newSize = fs.statSync(outPath).size;
+    const savedPct = (100 - (newSize / originalSize * 100)).toFixed(0);
+    log.push(`─── Done — ${(newSize/1024/1024).toFixed(1)} MB (${savedPct}% smaller) ✓`);
+
+    shell.openPath(downloadsPath);
+    new Notification({ title: 'Nyxon — Video Compressor', body: `${savedPct}% smaller, saved to Downloads` }).show();
+    return { success: true, log, outputPath: outPath };
+
+  } catch (err) {
+    log.push(`Error: ${err.message}`);
+    return { success: false, log, error: err.message };
+  }
+});
+// ─── Merge PDFs ─────────────────────────────────────────────────────────────
+ipcMain.handle('run-pdf-merge', async () => {
+  const log = [];
+  const win = BrowserWindow.getFocusedWindow();
+
+  const result = await dialog.showOpenDialog(win, {
+    title: 'Select 2 or more PDFs to merge (in the order you want them combined)',
+    defaultPath: os.homedir(),
+    properties: ['openFile', 'multiSelections'],
+    filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+  });
+
+  if (result.canceled || result.filePaths.length < 2) {
+    return { success: false, log, error: 'Select at least 2 PDFs to merge.' };
+  }
+
+  log.push(`Merging ${result.filePaths.length} PDFs…`);
+
+  try {
+    const { PDFDocument } = require('pdf-lib');
+    const merged = await PDFDocument.create();
+
+    for (const filePath of result.filePaths) {
+      const src = await PDFDocument.load(fs.readFileSync(filePath));
+      const pages = await merged.copyPages(src, src.getPageIndices());
+      pages.forEach(p => merged.addPage(p));
+      log.push(`Added: ${path.basename(filePath)} (${pages.length} page(s))`);
+    }
+
+    const bytes = await merged.save();
+    const downloadsPath = path.join(os.homedir(), 'Downloads');
+    const outPath = path.join(downloadsPath, `merged-${Date.now()}.pdf`);
+    fs.writeFileSync(outPath, bytes);
+
+    log.push(`─── Done — ${merged.getPageCount()} total pages, saved as ${path.basename(outPath)} ✓`);
+    shell.openPath(downloadsPath);
+    new Notification({ title: 'Nyxon — Merge PDFs', body: `${result.filePaths.length} PDFs merged` }).show();
+    return { success: true, log, outputPath: outPath };
+
+  } catch (err) {
+    log.push(`Error: ${err.message}`);
+    return { success: false, log, error: err.message };
+  }
+});
+// ─── PDF Watermark & Protect ───────────────────────────────────────────────
+ipcMain.handle('run-pdf-protect', async (event, config = {}) => {
+  const log = [];
+  const win = BrowserWindow.getFocusedWindow();
+  const watermark = (config.watermark || '').trim();
+  const password = (config.password || '').trim();
+
+  const result = await dialog.showOpenDialog(win, {
+    title: 'Select a PDF',
+    defaultPath: os.homedir(),
+    properties: ['openFile'],
+    filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false, log, error: 'No PDF selected.' };
+  }
+
+  const srcPath = result.filePaths[0];
+  const baseName = path.basename(srcPath, path.extname(srcPath));
+  const downloadsPath = path.join(os.homedir(), 'Downloads');
+
+  // Name the intermediate file honestly — it is NOT "protected" until
+  // encryption actually succeeds, so it must not be named as if it were.
+  const intermediatePath = path.join(downloadsPath, `${baseName}-watermarked-temp.pdf`);
+  let finalPath = null;
+
+  try {
+    const { PDFDocument, rgb, StandardFonts, degrees } = require('pdf-lib');
+    const doc = await PDFDocument.load(fs.readFileSync(srcPath));
+
+    if (watermark) {
+      const font = await doc.embedFont(StandardFonts.HelveticaBold);
+      for (const page of doc.getPages()) {
+        const { width, height } = page.getSize();
+        page.drawText(watermark, {
+          x: width / 2 - (watermark.length * 6),
+          y: height / 2,
+          size: 28, font, color: rgb(0.6, 0.1, 0.1),
+          opacity: 0.3, rotate: degrees(45)
+        });
+      }
+      log.push(`Watermark "${watermark}" applied to ${doc.getPageCount()} page(s)`);
+    }
+
+    const bytes = await doc.save();
+    fs.writeFileSync(intermediatePath, bytes);
+
+    if (password) {
+      try {
+        const muhammara = require('muhammara');
+        const encryptedPath = path.join(downloadsPath, `${baseName}-protected.pdf`);
+        muhammara.recrypt(intermediatePath, encryptedPath, {
+          userPassword: password,
+          ownerPassword: password + '-owner',
+          userProtectionFlag: 4
+        });
+        fs.unlinkSync(intermediatePath); // remove the temp unencrypted file
+        finalPath = encryptedPath;
+        log.push('Password protection applied ✓');
+
+      } catch (encryptErr) {
+        // Encryption failed — rename the temp file to something HONEST
+        // instead of leaving it as "-watermarked-temp" or claiming "protected"
+        const fallbackPath = path.join(downloadsPath, `${baseName}${watermark ? '-watermarked' : ''}-NOT-password-protected.pdf`);
+        fs.renameSync(intermediatePath, fallbackPath);
+        finalPath = fallbackPath;
+        log.push(`Warning: password protection failed (${encryptErr.message})`);
+        log.push(`Saved WITHOUT a password as ${path.basename(fallbackPath)} — do not treat this file as secured.`);
+      }
+    } else {
+      // No password requested at all — rename from the temp name to a clean one
+      const watermarkOnlyPath = path.join(downloadsPath, `${baseName}-watermarked.pdf`);
+      fs.renameSync(intermediatePath, watermarkOnlyPath);
+      finalPath = watermarkOnlyPath;
+    }
+
+    log.push(`─── Done — saved ${path.basename(finalPath)} ✓`);
+    shell.openPath(downloadsPath);
+    new Notification({ title: 'Nyxon — PDF Protect', body: `Saved ${path.basename(finalPath)}` }).show();
+
+    // success is only true if nothing was silently downgraded
+    const trulySucceeded = !password || finalPath.includes('-protected.pdf');
+    return { success: trulySucceeded, log, outputPath: finalPath };
+
+  } catch (err) {
+    log.push(`Error: ${err.message}`);
+    if (fs.existsSync(intermediatePath)) fs.unlinkSync(intermediatePath);
+    return { success: false, log, error: err.message };
+  }
+});

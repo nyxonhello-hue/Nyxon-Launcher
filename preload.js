@@ -62,6 +62,10 @@ contextBridge.exposeInMainWorld('nexus', {
   runDuplicateDetector: (folder, action) => ipcRenderer.invoke('run-duplicate-detector', folder, action),
   runSoftwareUpdater: () => ipcRenderer.invoke('run-software-updater'),
 
+  runPdfProtect: (config) => ipcRenderer.invoke('run-pdf-protect', config),
+  runPdfMerge: () => ipcRenderer.invoke('run-pdf-merge'),
+  runVideoCompressor: (config) => ipcRenderer.invoke('run-video-compressor', config),
+  runMediaConverter: (config) => ipcRenderer.invoke('run-media-converter', config),
   runPasswordGenerator: (config) => ipcRenderer.invoke('run-password-generator', config),
   runStartupManager: (action, name, path, type) => ipcRenderer.invoke('run-startup-manager', action, name, path, type),
 }); 
