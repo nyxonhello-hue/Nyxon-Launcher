@@ -1,6 +1,6 @@
 {
   "name": "nyxon-launcher",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Nyxon — Cross-platform desktop automation launcher",
   "main": "main.js",
   "scripts": {
