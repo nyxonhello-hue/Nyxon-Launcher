@@ -851,16 +851,16 @@ body {
 
     <div class="nav-label">Categories</div>
     <div class="nav-item" onclick="switchPage('automations',this,'File Management')">
-      <span class="nav-icon">📁</span><span>File Tools</span><span class="nav-count">8</span>
+      <span class="nav-icon">📁</span><span>File Tools</span><span class="nav-count" id="nav-count-file">0</span>
     </div>
     <div class="nav-item" onclick="switchPage('automations',this,'System')">
-      <span class="nav-icon">💻</span><span>System</span><span class="nav-count">6</span>
+      <span class="nav-icon">💻</span><span>System</span><span class="nav-count" id="nav-count-system">0</span>
     </div>
     <div class="nav-item" onclick="switchPage('automations',this,'Network & Web')">
-      <span class="nav-icon">🌐</span><span>Network & Web</span><span class="nav-count">6</span>
+      <span class="nav-icon">🌐</span><span>Network & Web</span><span class="nav-count" id="nav-count-network">0</span>
     </div>
     <div class="nav-item" onclick="switchPage('automations',this,'Business')">
-      <span class="nav-icon">🏢</span><span>Business</span><span class="nav-count">5</span>
+      <span class="nav-icon">🏢</span><span>Business</span><span class="nav-count" id="nav-count-business">0</span>
     </div>
 
     <div class="nav-label">App</div>
@@ -902,25 +902,25 @@ body {
       <div class="stat-card" style="background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(79,70,229,0.08));">
         <div class="stat-card-glow" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);"></div>
         <div class="stat-card-icon">⚡</div>
-        <div class="stat-card-val" style="background:linear-gradient(135deg,#a78bfa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">25</div>
+        <div class="stat-card-val" id="dash-total-count" style="background:linear-gradient(135deg,#a78bfa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">0</div>
         <div class="stat-card-label">Automations</div>
       </div>
       <div class="stat-card" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.06));">
         <div class="stat-card-glow" style="background:linear-gradient(135deg,#10b981,#059669);"></div>
         <div class="stat-card-icon">🆓</div>
-        <div class="stat-card-val" style="color:#34d399;">8</div>
+        <div class="stat-card-val" id="dash-free-count" style="color:#34d399;">0</div>
         <div class="stat-card-label">Free Tools</div>
       </div>
       <div class="stat-card" style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.06));">
         <div class="stat-card-glow" style="background:linear-gradient(135deg,#f59e0b,#d97706);"></div>
         <div class="stat-card-icon">⭐</div>
-        <div class="stat-card-val" style="color:#fbbf24;">17</div>
+        <div class="stat-card-val" id="dash-pro-count" style="color:#fbbf24;">0</div>
         <div class="stat-card-label">Pro Tools</div>
       </div>
       <div class="stat-card" style="background:linear-gradient(135deg,rgba(236,72,153,0.12),rgba(190,24,93,0.06));">
         <div class="stat-card-glow" style="background:linear-gradient(135deg,#ec4899,#be185d);"></div>
         <div class="stat-card-icon">🗂</div>
-        <div class="stat-card-val" style="color:#f472b6;">4</div>
+        <div class="stat-card-val" id="dash-category-count" style="color:#f472b6;">0</div>
         <div class="stat-card-label">Categories</div>
       </div>
     </div>
@@ -1329,11 +1329,67 @@ const automations = [
   desc:'Stamp a watermark across every page and/or lock a PDF with a password.',
   steps:['Opening PDF…','Applying watermark…','Encrypting…','Done.']
 },
+{
+  id:'imagetotext', type:'imagetotext', icon:'📝', name:'Image to Text', badge:'OCR',
+  category:'File Management', tier:'pro', duration:4000,
+  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+  accent:'#93c5fd', glow:'#60a5fa',
+  info:['Photos of handouts','Works offline','Copy or save .txt'],
+  btnLabel:'Extract Text',
+  desc:'Turn a photo of a handout, textbook page, or whiteboard into editable text — no internet needed.',
+  steps:['Reading image…','Recognizing text…','Cleaning up…','Done.']
+},
 ];
 
 const PRO_AUTOMATIONS = new Set(automations.filter(a=>a.tier==='pro').map(a=>a.id));
 const running = new Set();
 let isPro = false;
+
+function getAutomationStats() {
+  const byCategory = {};
+  let free = 0;
+  let pro = 0;
+
+  automations.forEach((auto) => {
+    byCategory[auto.category] = (byCategory[auto.category] || 0) + 1;
+    if (auto.tier === 'free') free += 1;
+    else pro += 1;
+  });
+
+  return {
+    total: automations.length,
+    free,
+    pro,
+    categories: Object.keys(byCategory).length,
+    byCategory
+  };
+}
+
+function updateAutomationStats() {
+  const stats = getAutomationStats();
+  const statusText = document.getElementById('status-text');
+  if (statusText) statusText.textContent = `${stats.total} automations ready`;
+
+  const totalEl = document.getElementById('dash-total-count');
+  const freeEl = document.getElementById('dash-free-count');
+  const proEl = document.getElementById('dash-pro-count');
+  const categoryEl = document.getElementById('dash-category-count');
+
+  if (totalEl) totalEl.textContent = stats.total;
+  if (freeEl) freeEl.textContent = stats.free;
+  if (proEl) proEl.textContent = stats.pro;
+  if (categoryEl) categoryEl.textContent = stats.categories;
+
+  const fileEl = document.getElementById('nav-count-file');
+  const systemEl = document.getElementById('nav-count-system');
+  const networkEl = document.getElementById('nav-count-network');
+  const businessEl = document.getElementById('nav-count-business');
+
+  if (fileEl) fileEl.textContent = stats.byCategory['File Management'] || 0;
+  if (systemEl) systemEl.textContent = stats.byCategory.System || 0;
+  if (networkEl) networkEl.textContent = stats.byCategory['Network & Web'] || 0;
+  if (businessEl) businessEl.textContent = stats.byCategory.Business || 0;
+}
 
 // ── IPC Map ───────────────────────────────────────────────────────────────────
 const ipcMap = {
@@ -1366,6 +1422,7 @@ const ipcMap = {
   videocompressor: () => launchVideoCompressor(),
   pdfmerge: () => window.nexus?.runPdfMerge(),
   pdfprotect: () => launchPdfProtect(),
+  imagetotext: () => launchImageToText(),
 };
 
 // ── Card Builder ──────────────────────────────────────────────────────────────
@@ -1417,6 +1474,7 @@ function renderDashboard() {
   const grid = document.getElementById('quick-grid');
   grid.innerHTML = '';
   automations.filter(a => a.tier === 'free').forEach((a, i) => grid.appendChild(buildCard(a, i*0.05)));
+  updateAutomationStats();
 }
 
 function renderAutomations(filter) {
@@ -1701,6 +1759,38 @@ function selectImg2pdfFit(val) {
       label.style.borderColor = 'var(--border)';
       label.style.color = 'var(--text3)';
     }
+  });
+}
+
+async function launchImageToText() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="width:440px;">
+        <div class="modal-title">📝 Image to Text</div>
+        <div class="modal-sub">Works best with clear, well-lit photos. You'll pick the image next.</div>
+
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);
+          cursor:pointer;margin-bottom:20px;">
+          <input type="checkbox" id="i2t-cleanup" checked style="accent-color:#8b5cf6;"/>
+          Clean up line breaks (recommended for photos — joins lines that only wrapped because of the photo, not real paragraph breaks)
+        </label>
+
+        <div class="modal-row">
+          <button class="modal-btn cancel" id="i2t-cancel">Cancel</button>
+          <button class="modal-btn confirm" id="i2t-confirm">Choose Image & Extract →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#i2t-cancel').onclick = () => { overlay.remove(); resolve(null); };
+    overlay.querySelector('#i2t-confirm').onclick = () => {
+      const cleanup = overlay.querySelector('#i2t-cleanup').checked;
+      overlay.remove();
+      resolve(window.nexus?.runImageToText({ cleanup }));
+    };
   });
 }
 
@@ -3032,9 +3122,10 @@ async function manualCheckUpdate() { addLog('Checking for updates…','info'); c
 
 // ── Onboarding ────────────────────────────────────────────────────────────────
 const ONBOARDING_KEY = 'nyxon-onboarding-complete';
+const automationStats = getAutomationStats();
 const onboardingSlides = [
   {icon:'🌑',title:'Welcome to <span>NYXON</span>',type:'welcome',body:'Nyxon is a desktop automation launcher.\nBuilt to save you time — every single day.\n\nRun powerful automations with one click.'},
-  {icon:'⚡',title:'Your <span>automations</span>',type:'tour',body:'25 built-in automations across 4 categories.\nEach one does real work on your system — no coding required.'},
+  {icon:'⚡',title:'Your <span>automations</span>',type:'tour',body:`${automationStats.total} built-in automations across ${automationStats.categories} categories.\nEach one does real work on your system — no coding required.`},
   {icon:'🔓',titlipce:'Free vs <span>Pro</span>',type:'pro',body:'Some automations are free forever.\nPro features unlock the full power of Nyxon\nwith a one-time payment of GH₵17.'},
   {icon:'🚀',title:"You're all <span>set</span>",type:'done',body:"Use the sidebar to navigate categories.\nClick any card to launch an automation.\nClick 🔒 on a Pro card to unlock it."}
 ];
@@ -3102,7 +3193,7 @@ initSettings();
 renderDashboard();
 initLicense();
 addLog('Nyxon Launcher initialised.','info');
-addLog('25 automations across 4 categories ready.','info');
+addLog(`${automationStats.total} automations across ${automationStats.categories} categories ready.`,'info');
 if(shouldShowOnboarding()) setTimeout(showOnboarding,600);
 </script>
 </body>
