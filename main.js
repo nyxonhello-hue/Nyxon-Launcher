@@ -215,45 +215,33 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
 
-  // Minimize to tray instead of minimizing normally
-    mainWindow.on('close', async (event) => {
-      if (!app.isQuiting) {
-        event.preventDefault();
+  // Keep the app alive in the tray when the window is closed.
+  mainWindow.on('close', async (event) => {
+    if (app.isQuiting) return;
 
-        // Show dialog asking what to do
-        const { response } = await dialog.showMessageBox(mainWindow, {
-          type: 'question',
-          title: 'Nyxon Launcher',
-          message: 'What would you like to do?',
-          buttons: ['Minimize to Tray', 'Quit Nyxon', 'Cancel'],
-          defaultId: 0,
-          cancelId: 2
-        });
+    event.preventDefault();
 
-        if (response === 0) {
-          // Minimize to tray
-          mainWindow.hide();
-          if (!global.trayNotified) {
-            new Notification({
-              title: 'Nyxon is still running',
-              body: 'Nyxon is in your system tray. Right-click the icon to access it.'
-            }).show();
-            global.trayNotified = true;
-          }
-        } else if (response === 1) {
-          // Actually quit
-          app.isQuiting = true;
-          app.quit();
-        }
-        // response === 2 → Cancel, do nothing
-      }
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      title: 'Nyxon Launcher',
+      message: 'What would you like to do?',
+      buttons: ['Minimize to Tray', 'Quit Nyxon', 'Cancel'],
+      defaultId: 0,
+      cancelId: 2
     });
 
-  // Prevent full close — just hide to tray
-  mainWindow.on('close', (event) => {
-    if (!app.isQuiting) {
-      event.preventDefault();
+    if (response === 0) {
       mainWindow.hide();
+      if (!global.trayNotified) {
+        new Notification({
+          title: 'Nyxon is still running',
+          body: 'Nyxon is in your system tray. Right-click the icon to access it.'
+        }).show();
+        global.trayNotified = true;
+      }
+    } else if (response === 1) {
+      app.isQuiting = true;
+      app.quit();
     }
   });
 
@@ -2880,15 +2868,102 @@ ipcMain.handle('run-startup-manager', async (_, action, name, entryPath, type) =
   if (action === 'disable' || action === 'enable') {
     try {
       if (platform === 'win32' && type === 'registry') {
-        const regKey = entryPath.includes('HKLM') ? 'HKLM' : 'HKCU';
-        const fullKey = `${regKey}\\Software\\Microsoft\\Windows\\CurrentVersion\\Run`;
+        const disabledFile = path.join(app.getPath('userData'), 'disabled-startup-items.json');
+        let disabledItems = {};
+        try {
+          if (fs.existsSync(disabledFile)) disabledItems = JSON.parse(fs.readFileSync(disabledFile, 'utf8'));
+        } catch (_) {}
+
+        const escapedName = name.replace(/'/g, "''");
+
         if (action === 'disable') {
-          // Move to disabled key
-          execSync(`reg copy "${fullKey}" "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Disabled" /v "${name}" /f 2>nul`, { shell: 'cmd.exe' });
-          execSync(`reg delete "${fullKey}" /v "${name}" /f 2>nul`, { shell: 'cmd.exe' });
+          // Search BOTH hives directly — don't trust entryPath to tell us which one it's in
+          const findScript = `
+            $name = '${escapedName}'
+            $hives = @('HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run', 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run')
+            foreach ($h in $hives) {
+              $val = Get-ItemProperty -Path $h -Name $name -ErrorAction SilentlyContinue
+              if ($val) {
+                Write-Output "HIVE:$h"
+                Write-Output "VALUE:$($val.$name)"
+                exit
+              }
+            }
+            Write-Output "NOTFOUND"
+          `;
+          const tmpFind = path.join(os.tmpdir(), `nyxon-find-startup-${Date.now()}.ps1`);
+          fs.writeFileSync(tmpFind, findScript);
+          let findOut = '';
+          try {
+            findOut = await new Promise((resolve, reject) => {
+              exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tmpFind}"`,
+                { timeout: 10000 }, (error, stdout) => error ? reject(error) : resolve(stdout));
+            });
+          } finally {
+            fs.unlink(tmpFind, () => {});
+          }
+
+          if (findOut.includes('NOTFOUND')) {
+            log.push(`Could not find ${name} in HKCU or HKLM Run keys — it may already be disabled.`);
+            return { success: false, log, error: 'Entry not found in registry.' };
+          }
+
+          const hiveMatch = findOut.match(/HIVE:(.+)/);
+          const valueMatch = findOut.match(/VALUE:(.+)/);
+          const foundHive = hiveMatch ? hiveMatch[1].trim() : null;
+          const foundValue = valueMatch ? valueMatch[1].trim() : null;
+
+          if (!foundHive || !foundValue) {
+            log.push(`Found ${name} but could not read its value.`);
+            return { success: false, log, error: 'Could not read entry value.' };
+          }
+
+          // Save so it can be restored later
+          disabledItems[name] = { value: foundValue, hive: foundHive };
+          fs.writeFileSync(disabledFile, JSON.stringify(disabledItems, null, 2));
+
+          // Actually remove it — this is what stops it launching at boot
+          const deleteScript = `Remove-ItemProperty -Path '${foundHive}' -Name '${escapedName}' -ErrorAction Stop`;
+          const tmpDel = path.join(os.tmpdir(), `nyxon-delete-startup-${Date.now()}.ps1`);
+          fs.writeFileSync(tmpDel, deleteScript);
+          try {
+            await new Promise((resolve, reject) => {
+              exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tmpDel}"`,
+                { timeout: 10000 }, (error, stdout, stderr) => error ? reject(new Error(stderr || error.message)) : resolve());
+            });
+          } finally {
+            fs.unlink(tmpDel, () => {});
+          }
+
+          if (foundHive.startsWith('HKLM')) {
+            log.push(`Note: ${name} was in HKLM (machine-wide) — this requires Nyxon to run as Administrator.`);
+          }
+
         } else {
-          execSync(`reg copy "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Disabled" "${fullKey}" /v "${name}" /f 2>nul`, { shell: 'cmd.exe' });
+          // Re-enable — restore from saved backup
+          const saved = disabledItems[name];
+          if (!saved) {
+            log.push(`No saved value found for ${name} — cannot re-enable automatically.`);
+            return { success: false, log, error: 'No backup found for this item.' };
+          }
+
+          const escapedValue = saved.value.replace(/'/g, "''");
+          const addScript = `New-ItemProperty -Path '${saved.hive}' -Name '${escapedName}' -Value '${escapedValue}' -PropertyType String -Force -ErrorAction Stop`;
+          const tmpAdd = path.join(os.tmpdir(), `nyxon-add-startup-${Date.now()}.ps1`);
+          fs.writeFileSync(tmpAdd, addScript);
+          try {
+            await new Promise((resolve, reject) => {
+              exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tmpAdd}"`,
+                { timeout: 10000 }, (error, stdout, stderr) => error ? reject(new Error(stderr || error.message)) : resolve());
+            });
+          } finally {
+            fs.unlink(tmpAdd, () => {});
+          }
+
+          delete disabledItems[name];
+          fs.writeFileSync(disabledFile, JSON.stringify(disabledItems, null, 2));
         }
+
       } else if (platform === 'linux' && type === 'desktop') {
         const content = fs.readFileSync(entryPath, 'utf8');
         if (action === 'disable') {
@@ -2909,7 +2984,13 @@ ipcMain.handle('run-startup-manager', async (_, action, name, entryPath, type) =
       log.push(`${name} ${action}d at startup ✓`);
       return { success: true, log };
     } catch (err) {
-      log.push('Error: ' + err.message);
+      const isPermissionError = /access is denied|unauthorized|denied/i.test(err.message);
+      if (isPermissionError) {
+        log.push(`Permission denied disabling ${name}.`);
+        log.push('This entry likely requires running Nyxon as Administrator (right-click → Run as administrator).');
+      } else {
+        log.push('Error: ' + err.message);
+      }
       return { success: false, log, error: err.message };
     }
   }
@@ -2918,6 +2999,7 @@ ipcMain.handle('run-startup-manager', async (_, action, name, entryPath, type) =
 });
 
 // ─── Password Generator ────────────────────────────────────────────────────
+
 ipcMain.handle('run-password-generator', async (event, config = {}) => {
   const crypto = require('crypto');
   const length = Math.min(64, Math.max(8, parseInt(config.length) || 16));
@@ -3186,6 +3268,74 @@ ipcMain.handle('run-pdf-protect', async (event, config = {}) => {
   } catch (err) {
     log.push(`Error: ${err.message}`);
     if (fs.existsSync(intermediatePath)) fs.unlinkSync(intermediatePath);
+    return { success: false, log, error: err.message };
+  }
+});
+
+// ─── Image to Text (OCR) ────────────────────────────────────────────────────
+ipcMain.handle('run-image-to-text', async (event, config = {}) => {
+  const log = [];
+  const win = BrowserWindow.getFocusedWindow();
+  const cleanup = config.cleanup !== false;
+
+  const result = await dialog.showOpenDialog(win, {
+    title: 'Select an image to extract text from',
+    defaultPath: os.homedir(),
+    properties: ['openFile'],
+    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'bmp', 'tiff'] }]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false, log, error: 'No image selected.' };
+  }
+
+  const imgPath = result.filePaths[0];
+  log.push(`Reading: ${path.basename(imgPath)}`);
+
+  try {
+    const Tesseract = require('tesseract.js');
+   let langPath = path.join(__dirname, 'node_modules', '@tesseract.js-data', 'eng', '4.0.0_best_int');
+    if (langPath.includes('app.asar')) {
+      langPath = langPath.replace('app.asar', 'app.asar.unpacked');
+    } 
+
+    const { data: { text, confidence } } = await Tesseract.recognize(imgPath, 'eng', {
+      langPath,
+      gzip: true,
+      logger: () => {}
+    });
+
+    log.push(`Recognized text (confidence: ${Math.round(confidence)}%)`);
+
+    let finalText = text.trim();
+    if (cleanup) {
+      // Join lines that only wrapped due to the photo's width, but keep real paragraph breaks
+      finalText = finalText
+        .split(/\n\s*\n/)
+        .map(para => para.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim())
+        .join('\n\n');
+      log.push('Cleaned up line breaks');
+    }
+
+    const baseName = path.basename(imgPath, path.extname(imgPath));
+    const downloadsPath = path.join(os.homedir(), 'Downloads');
+    const outPath = path.join(downloadsPath, `${baseName}-extracted.txt`);
+    fs.writeFileSync(outPath, finalText, 'utf8');
+
+    clipboard.writeText(finalText);
+    log.push(`─── Done — text copied to clipboard and saved as ${path.basename(outPath)} ✓`);
+
+    shell.openPath(downloadsPath);
+    new Notification({
+      title: 'Nyxon — Image to Text',
+      body: `Text extracted (${Math.round(confidence)}% confidence) and copied to clipboard`
+    }).show();
+
+    return { success: true, log, outputPath: outPath, text: finalText };
+
+  } catch (err) {
+    log.push(`Error: ${err.message}`);
+    log.push('Tip: make sure the image is clear and well-lit — very blurry photos may not recognize well.');
     return { success: false, log, error: err.message };
   }
 });
