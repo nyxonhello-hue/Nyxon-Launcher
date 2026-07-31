@@ -1,6 +1,6 @@
 {
   "name": "nyxon-launcher",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Nyxon — Cross-platform desktop automation launcher",
   "main": "main.js",
   "scripts": {
@@ -15,10 +15,12 @@
     "productName": "Nyxon Launcher",
     "asar": true,
     "asarUnpack": [
-      "node_modules/@napi-rs/canvas*/**",
-      "node_modules/muhammara/**",
-      "node_modules/ffmpeg-static/**"
-    ],
+  "node_modules/@napi-rs/canvas*/**",
+  "node_modules/muhammara/**",
+  "node_modules/ffmpeg-static/**",
+  "node_modules/tesseract.js/**",
+  "node_modules/@tesseract.js-data/**"
+],
     "copyright": "Copyright © 2026 Nyxon",
     "files": [
       "**/*"
@@ -72,6 +74,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@napi-rs/canvas": "^1.0.2",
+    "@tesseract.js-data/eng": "^1.0.0",
     "archiver": "^7.0.1",
     "axios": "^1.16.1",
     "cheerio": "^1.1.0",
@@ -86,6 +89,7 @@
     "pdfjs-dist": "^6.1.200",
     "qrcode": "^1.5.4",
     "sudo-prompt": "^9.2.1",
+    "tesseract.js": "^7.0.0",
     "xlsx": "^0.18.5"
   }
 }
