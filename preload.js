@@ -67,5 +67,10 @@ contextBridge.exposeInMainWorld('nexus', {
   runVideoCompressor: (config) => ipcRenderer.invoke('run-video-compressor', config),
   runMediaConverter: (config) => ipcRenderer.invoke('run-media-converter', config),
   runPasswordGenerator: (config) => ipcRenderer.invoke('run-password-generator', config),
-  runStartupManager: (action, name, path, type) => ipcRenderer.invoke('run-startup-manager', action, name, path, type),
+  runStartupManager: () => ipcRenderer.invoke('run-startup-manager'),
+  openStartupSettings: () => ipcRenderer.invoke('open-startup-settings'),
+
+  runLargeFileFinder: (config) => ipcRenderer.invoke('run-large-file-finder', config),
+  openFileLocation:   (filePath) => ipcRenderer.invoke('open-file-location', filePath),
+  deleteLargeFile:    (filePath) => ipcRenderer.invoke('delete-large-file', filePath),
 }); 

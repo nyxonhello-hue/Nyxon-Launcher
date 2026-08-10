@@ -2777,225 +2777,88 @@ ipcMain.handle('run-software-updater', async () => {
 });
 
 // ─── Boot Startup Manager ─────────────────────────────────────────────────────
-ipcMain.handle('run-startup-manager', async (_, action, name, entryPath, type) => {
-  const log  = [];
+// ─── Startup Manager (read-only) ────────────────────────────────────────────
+ipcMain.handle('run-startup-manager', async () => {
+  const log = [];
   const platform = os.platform();
   const { execSync } = require('child_process');
+  const items = [];
 
-  if (action === 'list') {
-    log.push('Scanning startup entries…');
-    const items = [];
+  log.push('Scanning startup entries…');
 
-    try {
-      if (platform === 'win32') {
-        // Windows — read registry run keys
-        const keys = [
-          'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run',
-          'HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'
-        ];
-        for (const key of keys) {
-          try {
-            const output = execSync(`reg query "${key}" 2>nul`, { shell: 'cmd.exe' }).toString();
-            const lines = output.split('\n').filter(l => l.includes('REG_SZ'));
-            for (const line of lines) {
-              const parts = line.trim().split(/\s{2,}/);
-              if (parts.length >= 3) {
-                items.push({ name: parts[0], path: parts[2], enabled: true, type: 'registry', key });
-              }
-            }
-          } catch (_) {}
-        }
-
-        // Also check startup folder
-        const startupFolder = path.join(os.homedir(), 'AppData', 'Roaming', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup');
-        if (fs.existsSync(startupFolder)) {
-          const files = fs.readdirSync(startupFolder);
-          files.forEach(f => items.push({ name: f.replace(/\.(lnk|bat|exe)$/i, ''), path: path.join(startupFolder, f), enabled: true, type: 'folder' }));
-        }
-
-      } else if (platform === 'linux') {
-        // Linux — check autostart folder
-        const autostartDir = path.join(os.homedir(), '.config', 'autostart');
-        if (fs.existsSync(autostartDir)) {
-          const files = fs.readdirSync(autostartDir).filter(f => f.endsWith('.desktop'));
-          for (const file of files) {
-            try {
-              const content = fs.readFileSync(path.join(autostartDir, file), 'utf8');
-              const nameMatch = content.match(/^Name=(.+)/m);
-              const execMatch = content.match(/^Exec=(.+)/m);
-              const hiddenMatch = content.match(/^Hidden=(.+)/m);
-              const enabled = !hiddenMatch || hiddenMatch[1].trim().toLowerCase() !== 'true';
-              items.push({
-                name: nameMatch ? nameMatch[1].trim() : file.replace('.desktop', ''),
-                command: execMatch ? execMatch[1].trim() : '',
-                path: path.join(autostartDir, file),
-                enabled, type: 'desktop'
-              });
-            } catch (_) {}
-          }
-        }
-
-        // Also check systemd user services
-        const systemdDir = path.join(os.homedir(), '.config', 'systemd', 'user');
-        if (fs.existsSync(systemdDir)) {
-          const services = fs.readdirSync(systemdDir).filter(f => f.endsWith('.service'));
-          services.forEach(s => items.push({ name: s.replace('.service', ''), path: path.join(systemdDir, s), enabled: true, type: 'systemd' }));
-        }
-
-      } else if (platform === 'darwin') {
-        // macOS — check LaunchAgents
-        const launchAgentDirs = [
-          path.join(os.homedir(), 'Library', 'LaunchAgents'),
-          '/Library/LaunchAgents'
-        ];
-        for (const dir of launchAgentDirs) {
-          if (fs.existsSync(dir)) {
-            const files = fs.readdirSync(dir).filter(f => f.endsWith('.plist'));
-            files.forEach(f => items.push({ name: f.replace('.plist', ''), path: path.join(dir, f), enabled: true, type: 'launchagent' }));
-          }
-        }
-      }
-
-      log.push(`Found ${items.length} startup item(s)`);
-      return { success: true, log, startupItems: items };
-    } catch (err) {
-      log.push('Error scanning startup: ' + err.message);
-      return { success: false, log, startupItems: [] };
-    }
-  }
-
-  // Enable / Disable
-  if (action === 'disable' || action === 'enable') {
-    try {
-      if (platform === 'win32' && type === 'registry') {
-        const disabledFile = path.join(app.getPath('userData'), 'disabled-startup-items.json');
-        let disabledItems = {};
+  try {
+    if (platform === 'win32') {
+      const keys = [
+        'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run',
+        'HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'
+      ];
+      for (const key of keys) {
         try {
-          if (fs.existsSync(disabledFile)) disabledItems = JSON.parse(fs.readFileSync(disabledFile, 'utf8'));
-        } catch (_) {}
-
-        const escapedName = name.replace(/'/g, "''");
-
-        if (action === 'disable') {
-          // Search BOTH hives directly — don't trust entryPath to tell us which one it's in
-          const findScript = `
-            $name = '${escapedName}'
-            $hives = @('HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run', 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run')
-            foreach ($h in $hives) {
-              $val = Get-ItemProperty -Path $h -Name $name -ErrorAction SilentlyContinue
-              if ($val) {
-                Write-Output "HIVE:$h"
-                Write-Output "VALUE:$($val.$name)"
-                exit
-              }
+          const output = execSync(`reg query "${key}" 2>nul`, { shell: 'cmd.exe' }).toString();
+          const lines = output.split('\n').filter(l => l.includes('REG_SZ'));
+          for (const line of lines) {
+            const parts = line.trim().split(/\s{2,}/);
+            if (parts.length >= 3) {
+              items.push({ name: parts[0], path: parts[2] });
             }
-            Write-Output "NOTFOUND"
-          `;
-          const tmpFind = path.join(os.tmpdir(), `nyxon-find-startup-${Date.now()}.ps1`);
-          fs.writeFileSync(tmpFind, findScript);
-          let findOut = '';
-          try {
-            findOut = await new Promise((resolve, reject) => {
-              exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tmpFind}"`,
-                { timeout: 10000 }, (error, stdout) => error ? reject(error) : resolve(stdout));
-            });
-          } finally {
-            fs.unlink(tmpFind, () => {});
           }
-
-          if (findOut.includes('NOTFOUND')) {
-            log.push(`Could not find ${name} in HKCU or HKLM Run keys — it may already be disabled.`);
-            return { success: false, log, error: 'Entry not found in registry.' };
-          }
-
-          const hiveMatch = findOut.match(/HIVE:(.+)/);
-          const valueMatch = findOut.match(/VALUE:(.+)/);
-          const foundHive = hiveMatch ? hiveMatch[1].trim() : null;
-          const foundValue = valueMatch ? valueMatch[1].trim() : null;
-
-          if (!foundHive || !foundValue) {
-            log.push(`Found ${name} but could not read its value.`);
-            return { success: false, log, error: 'Could not read entry value.' };
-          }
-
-          // Save so it can be restored later
-          disabledItems[name] = { value: foundValue, hive: foundHive };
-          fs.writeFileSync(disabledFile, JSON.stringify(disabledItems, null, 2));
-
-          // Actually remove it — this is what stops it launching at boot
-          const deleteScript = `Remove-ItemProperty -Path '${foundHive}' -Name '${escapedName}' -ErrorAction Stop`;
-          const tmpDel = path.join(os.tmpdir(), `nyxon-delete-startup-${Date.now()}.ps1`);
-          fs.writeFileSync(tmpDel, deleteScript);
-          try {
-            await new Promise((resolve, reject) => {
-              exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tmpDel}"`,
-                { timeout: 10000 }, (error, stdout, stderr) => error ? reject(new Error(stderr || error.message)) : resolve());
-            });
-          } finally {
-            fs.unlink(tmpDel, () => {});
-          }
-
-          if (foundHive.startsWith('HKLM')) {
-            log.push(`Note: ${name} was in HKLM (machine-wide) — this requires Nyxon to run as Administrator.`);
-          }
-
-        } else {
-          // Re-enable — restore from saved backup
-          const saved = disabledItems[name];
-          if (!saved) {
-            log.push(`No saved value found for ${name} — cannot re-enable automatically.`);
-            return { success: false, log, error: 'No backup found for this item.' };
-          }
-
-          const escapedValue = saved.value.replace(/'/g, "''");
-          const addScript = `New-ItemProperty -Path '${saved.hive}' -Name '${escapedName}' -Value '${escapedValue}' -PropertyType String -Force -ErrorAction Stop`;
-          const tmpAdd = path.join(os.tmpdir(), `nyxon-add-startup-${Date.now()}.ps1`);
-          fs.writeFileSync(tmpAdd, addScript);
-          try {
-            await new Promise((resolve, reject) => {
-              exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tmpAdd}"`,
-                { timeout: 10000 }, (error, stdout, stderr) => error ? reject(new Error(stderr || error.message)) : resolve());
-            });
-          } finally {
-            fs.unlink(tmpAdd, () => {});
-          }
-
-          delete disabledItems[name];
-          fs.writeFileSync(disabledFile, JSON.stringify(disabledItems, null, 2));
-        }
-
-      } else if (platform === 'linux' && type === 'desktop') {
-        const content = fs.readFileSync(entryPath, 'utf8');
-        if (action === 'disable') {
-          const updated = content.includes('Hidden=') ? content.replace(/Hidden=.+/m, 'Hidden=true') : content + '\nHidden=true';
-          fs.writeFileSync(entryPath, updated);
-        } else {
-          const updated = content.replace(/Hidden=true/m, 'Hidden=false');
-          fs.writeFileSync(entryPath, updated);
-        }
-      } else if (platform === 'darwin' && type === 'launchagent') {
-        if (action === 'disable') {
-          execSync(`launchctl unload "${entryPath}" 2>/dev/null || true`);
-        } else {
-          execSync(`launchctl load "${entryPath}" 2>/dev/null || true`);
-        }
+        } catch (_) {}
       }
 
-      log.push(`${name} ${action}d at startup ✓`);
-      return { success: true, log };
-    } catch (err) {
-      const isPermissionError = /access is denied|unauthorized|denied/i.test(err.message);
-      if (isPermissionError) {
-        log.push(`Permission denied disabling ${name}.`);
-        log.push('This entry likely requires running Nyxon as Administrator (right-click → Run as administrator).');
-      } else {
-        log.push('Error: ' + err.message);
+      const startupFolder = path.join(os.homedir(), 'AppData', 'Roaming', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup');
+      if (fs.existsSync(startupFolder)) {
+        fs.readdirSync(startupFolder).forEach(f =>
+          items.push({ name: f.replace(/\.(lnk|bat|exe)$/i, ''), path: path.join(startupFolder, f) })
+        );
       }
-      return { success: false, log, error: err.message };
+
+    } else if (platform === 'linux') {
+      const autostartDir = path.join(os.homedir(), '.config', 'autostart');
+      if (fs.existsSync(autostartDir)) {
+        fs.readdirSync(autostartDir).filter(f => f.endsWith('.desktop')).forEach(file => {
+          try {
+            const content = fs.readFileSync(path.join(autostartDir, file), 'utf8');
+            const nameMatch = content.match(/^Name=(.+)/m);
+            items.push({ name: nameMatch ? nameMatch[1].trim() : file, path: path.join(autostartDir, file) });
+          } catch (_) {}
+        });
+      }
+
+    } else if (platform === 'darwin') {
+      const dirs = [path.join(os.homedir(), 'Library', 'LaunchAgents'), '/Library/LaunchAgents'];
+      for (const dir of dirs) {
+        if (fs.existsSync(dir)) {
+          fs.readdirSync(dir).filter(f => f.endsWith('.plist')).forEach(f =>
+            items.push({ name: f.replace('.plist', ''), path: path.join(dir, f) })
+          );
+        }
+      }
     }
-  }
 
-  return { success: false, log: ['Unknown action.'] };
+    log.push(`Found ${items.length} startup item(s)`);
+    return { success: true, log, startupItems: items, platform };
+
+  } catch (err) {
+    log.push('Error scanning startup: ' + err.message);
+    return { success: false, log, startupItems: [] };
+  }
+});
+
+// Opens the OS's real startup-apps settings (the built-in place to actually toggle these)
+ipcMain.handle('open-startup-settings', async () => {
+  const platform = os.platform();
+  try {
+    if (platform === 'win32') {
+      shell.openExternal('ms-settings:startupapps'); // modern Windows equivalent of Task Manager's Startup tab
+    } else if (platform === 'darwin') {
+      exec('open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"');
+    } else {
+      shell.openExternal('https://www.google.com/search?q=disable+startup+apps+on+' + encodeURIComponent(platform));
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
 // ─── Password Generator ────────────────────────────────────────────────────
@@ -3337,5 +3200,78 @@ ipcMain.handle('run-image-to-text', async (event, config = {}) => {
     log.push(`Error: ${err.message}`);
     log.push('Tip: make sure the image is clear and well-lit — very blurry photos may not recognize well.');
     return { success: false, log, error: err.message };
+  }
+});
+
+// ─── Large File Finder ──────────────────────────────────────────────────────
+ipcMain.handle('run-large-file-finder', async (event, config = {}) => {
+  const log = [];
+  const win = BrowserWindow.getFocusedWindow();
+  const minMb = Math.max(1, parseInt(config.minMb) || 500);
+  const minBytes = minMb * 1024 * 1024;
+
+  const result = await dialog.showOpenDialog(win, {
+    title: 'Select a folder to scan',
+    defaultPath: os.homedir(),
+    properties: ['openDirectory']
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false, log, error: 'No folder selected.' };
+  }
+
+  const targetDir = result.filePaths[0];
+  log.push(`Scanning: ${targetDir} (files ≥ ${minMb} MB)`);
+
+  const found = [];
+  const SKIP_DIRS = new Set(['node_modules', '.git', '$Recycle.Bin', 'System Volume Information']);
+
+  function walk(dir) {
+    let entries;
+    try { entries = fs.readdirSync(dir); } catch (_) { return; }
+    for (const entry of entries) {
+      if (SKIP_DIRS.has(entry)) continue;
+      const full = path.join(dir, entry);
+      let stat;
+      try { stat = fs.statSync(full); } catch (_) { continue; }
+      if (stat.isDirectory()) {
+        walk(full);
+      } else if (stat.isFile() && stat.size >= minBytes) {
+        found.push({ path: full, size: stat.size });
+      }
+    }
+  }
+
+  try {
+    walk(targetDir);
+    found.sort((a, b) => b.size - a.size);
+
+    const files = found.slice(0, 100).map(f => ({
+      path: f.path,
+      sizeLabel: f.size >= 1024 * 1024 * 1024
+        ? (f.size / 1024 / 1024 / 1024).toFixed(2) + ' GB'
+        : (f.size / 1024 / 1024).toFixed(1) + ' MB'
+    }));
+
+    log.push(`─── Done — ${found.length} file(s) found ✓`);
+    return { success: true, log, files };
+
+  } catch (err) {
+    log.push(`Error: ${err.message}`);
+    return { success: false, log, error: err.message };
+  }
+});
+
+ipcMain.handle('open-file-location', async (event, filePath) => {
+  shell.showItemInFolder(filePath);
+  return { success: true };
+});
+
+ipcMain.handle('delete-large-file', async (event, filePath) => {
+  try {
+    await shell.trashItem(filePath); // Recycle Bin / Trash, not permanent
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 });
