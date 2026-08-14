@@ -1,7 +1,7 @@
 {
   "name": "nyxon-launcher",
   "version": "1.2.0",
-  "description": "Nyxon — Cross-platform desktop automation launcher",
+  "description": "Nyxon \u2014 Cross-platform desktop automation launcher",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -15,15 +15,20 @@
     "productName": "Nyxon Launcher",
     "asar": true,
     "asarUnpack": [
-  "node_modules/@napi-rs/canvas*/**",
-  "node_modules/muhammara/**",
-  "node_modules/ffmpeg-static/**",
-  "node_modules/tesseract.js/**",
-  "node_modules/@tesseract.js-data/**"
-],
-    "copyright": "Copyright © 2026 Nyxon",
+      "node_modules/@napi-rs/canvas*/**",
+      "node_modules/muhammara/**",
+      "node_modules/ffmpeg-static/**",
+      "node_modules/tesseract.js/**",
+      "node_modules/@tesseract.js-data/**"
+    ],
+    "copyright": "Copyright \u00a9 2026 Nyxon",
     "files": [
-      "**/*"
+      "**/*",
+      "!.env",
+      "!.env.*",
+      "!.git",
+      "!.gitignore",
+      "!**/*.map"
     ],
     "publish": {
       "provider": "github",
@@ -64,8 +69,8 @@
     }
   },
   "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.0.0"
+    "electron": "^42.0.0",
+    "electron-builder": "^26.0.0"
   },
   "author": {
     "name": "Nyxon",
@@ -90,6 +95,9 @@
     "qrcode": "^1.5.4",
     "sudo-prompt": "^9.2.1",
     "tesseract.js": "^7.0.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "overrides": {
+    "tar": "^7.5.22"
   }
 }
