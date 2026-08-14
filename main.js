@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Notification, dialog, Tray, Menu, nativeImage, clipboard, screen } = require('electron');const path = require('path');
+const { app, BrowserWindow, ipcMain, shell, Notification, dialog, Tray, Menu, nativeImage, clipboard } = require('electron');const path = require('path');
 const { exec } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -2082,8 +2082,6 @@ ipcMain.handle('run-dns-cleaner', async () => {
     return { success: false, log, error: err.message };
   }
 });
-
-// Screenshot feature removed.
 
 // ─── Invoice Generator ─────────────────────────────────────────────────────
 ipcMain.handle('run-invoice', async (event, config = {}) => {

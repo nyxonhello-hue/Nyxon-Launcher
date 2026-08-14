@@ -1247,7 +1247,6 @@ const automations = [
   desc:'Clear your system\'s DNS cache — fixes stale sites, slow lookups, and connection glitches.',
   steps:['Flushing DNS cache…','Restarting resolver…','Done.']
 },
- 
 {
   id:'invoice', type:'invoice', icon:'🧾', name:'Invoice Generator', badge:'Generate',
   category:'Business', tier:'pro', duration:3000,
@@ -2255,8 +2254,6 @@ async function launchPdfProtect() {
     };
   });
 }
-
-// Screenshot automation removed.
 
 async function launchQrCode() {
   return new Promise((resolve) => {
