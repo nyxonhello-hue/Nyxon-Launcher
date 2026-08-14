@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld('nexus', {
   runImageToPdf: (config) => ipcRenderer.invoke('run-image-to-pdf', config),
   runCompressor: (config) => ipcRenderer.invoke('run-compressor', config),
   runQrCode: (config) => ipcRenderer.invoke('run-qr-code', config),
+  
+  
   runDnsCleaner: () => ipcRenderer.invoke('run-dns-cleaner'),
   runInvoice: (config) => ipcRenderer.invoke('run-invoice', config),
   runFileSplitter: (config) => ipcRenderer.invoke('run-file-splitter', config),

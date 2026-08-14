@@ -1017,6 +1017,14 @@ body {
 <div class="toast-container" id="toasts"></div>
 
 <script>
+// ── HTML escaping helper (use for ANY externally-sourced or user-supplied text
+//    rendered via innerHTML — scraped page content, clipboard text, etc.) ──────
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
 // ── Generate Starfield ────────────────────────────────────────────────────────
 (function() {
   const container = document.getElementById('stars');
@@ -1239,6 +1247,7 @@ const automations = [
   desc:'Clear your system\'s DNS cache — fixes stale sites, slow lookups, and connection glitches.',
   steps:['Flushing DNS cache…','Restarting resolver…','Done.']
 },
+ 
 {
   id:'invoice', type:'invoice', icon:'🧾', name:'Invoice Generator', badge:'Generate',
   category:'Business', tier:'pro', duration:3000,
@@ -2247,6 +2256,8 @@ async function launchPdfProtect() {
   });
 }
 
+// Screenshot automation removed.
+
 async function launchQrCode() {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -2855,7 +2866,7 @@ function renderClipboardList() {
     return `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview.replace(/</g,'&lt;')}</div>
+          <div style="font-size:12px;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(preview)}</div>
           <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;">${time}</div>
         </div>
         <button type="button" onclick="pinClipboardEntry('${e.id}')"
@@ -3058,7 +3069,7 @@ async function previewScrape() {
   if (result?.preview && result.preview.length > 0) {
     previewEl.style.display = 'block';
     contentEl.innerHTML = result.preview.slice(0, 5).map((item, i) =>
-      `<div style="padding:3px 0;border-bottom:1px solid rgba(124,58,237,0.1);">${i+1}. ${item}</div>`
+      `<div style="padding:3px 0;border-bottom:1px solid rgba(124,58,237,0.1);">${i+1}. ${escapeHtml(item)}</div>`
     ).join('');
   } else {
     previewEl.style.display = 'block';

@@ -1,7 +1,64 @@
-const { app, BrowserWindow, ipcMain, shell, Notification, dialog, Tray, Menu, nativeImage, clipboard } = require('electron');const path = require('path');
+const { app, BrowserWindow, ipcMain, shell, Notification, dialog, Tray, Menu, nativeImage, clipboard, screen } = require('electron');const path = require('path');
 const { exec } = require('child_process');
 const fs = require('fs');
 const os = require('os');
+
+// ─── Pro license gate ──────────────────────────────────────────────────────────
+// The renderer's UI only *hides* Pro features from Free users — it never
+// enforced who's allowed to call the underlying IPC handlers. Any script
+// running in the renderer (including one injected via XSS) could previously
+// invoke Pro handlers directly through window.nexus and get full Pro
+// functionality without a license. This closes that gap at the IPC layer,
+// which is the only place enforcement actually matters.
+//
+// Note: this checks the locally cached license.json, so it's fast and works
+// offline. It stops the "call the IPC channel directly" bypass, but it can't
+// stop someone with real filesystem access to their own machine from hand-
+// editing license.json — no offline license check can fully prevent that.
+function isLocalLicensePro() {
+  try {
+    const licenseFile = path.join(app.getPath('userData'), 'license.json');
+    if (!fs.existsSync(licenseFile)) return false;
+    const data = JSON.parse(fs.readFileSync(licenseFile, 'utf8'));
+    return !!data.key && data.tier === 'pro';
+  } catch (_) {
+    return false;
+  }
+}
+
+const PRO_IPC_CHANNELS = new Set([
+  // Bulk Renamer, Auto Backup, Duplicate Detector
+  'run-bulk-renamer', 'run-backup', 'run-duplicate-detector',
+  // Daily Digest, Deploy Script, Startup Manager, Auto Software Updater
+  'run-daily-digest', 'run-script', 'run-startup-manager', 'open-startup-settings', 'run-software-updater',
+  // Launch Workspace
+  'run-open-urls', 'save-workspace', 'delete-workspace',
+  // Company Assessment, Web Scraper
+  'run-assessment', 'run-web-scraper',
+  // Convert/compress/split/merge/protect file tools
+  'run-pdf-to-image', 'run-image-to-pdf', 'run-compressor', 'run-invoice', 'run-file-splitter',
+  'run-media-converter', 'run-video-compressor', 'run-pdf-merge', 'run-pdf-protect', 'run-image-to-text',
+  // Expense Tracker
+  'get-expenses', 'add-expense', 'delete-expense', 'export-expenses',
+  // Clipboard History
+  'get-clipboard-history', 'toggle-clipboard-watching', 'copy-clipboard-entry',
+  'pin-clipboard-entry', 'delete-clipboard-entry', 'clear-clipboard-history',
+  // App Uninstaller Helper
+  'list-installed-apps', 'uninstall-app',
+  // Large File Finder
+  'run-large-file-finder', 'open-file-location', 'delete-large-file',
+]);
+
+const _ipcHandle = ipcMain.handle.bind(ipcMain);
+ipcMain.handle = (channel, listener) => {
+  if (!PRO_IPC_CHANNELS.has(channel)) return _ipcHandle(channel, listener);
+  return _ipcHandle(channel, async (event, ...args) => {
+    if (!isLocalLicensePro()) {
+      return { success: false, error: 'This automation requires Nyxon Pro.', licenseRequired: true };
+    }
+    return listener(event, ...args);
+  });
+};
 
 // ─── Polyfill for undici/Web APIs ─────────────────────────────────────────────
 // Fix "File is not defined" error from undici in main process
@@ -1373,16 +1430,17 @@ ipcMain.handle('check-license', async () => {
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
           try { resolve(JSON.parse(body)); }
-          catch { resolve({ valid: true }); } // parse error → give benefit of doubt
+          catch { resolve({ valid: false, reason: 'Bad response from server.' }); }
         });
       });
 
-      // If server unreachable → give benefit of doubt
-      // Don't punish users for bad internet
-      req.on('error', () => resolve({ valid: true }));
+      // Server unreachable / timed out → fail CLOSED, not open.
+      // (A network blip should not silently grant Pro to anyone who can
+      // interfere with this request — e.g. block/redirect it.)
+      req.on('error', () => resolve({ valid: false, reason: 'Could not reach license server.' }));
       req.setTimeout(5000, () => {
         req.destroy();
-        resolve({ valid: true }); // timeout → give benefit of doubt
+        resolve({ valid: false, reason: 'License server timed out.' });
       });
 
       req.write(payload);
@@ -2025,6 +2083,8 @@ ipcMain.handle('run-dns-cleaner', async () => {
   }
 });
 
+// Screenshot feature removed.
+
 // ─── Invoice Generator ─────────────────────────────────────────────────────
 ipcMain.handle('run-invoice', async (event, config = {}) => {
   const log = [];
@@ -2508,20 +2568,22 @@ ipcMain.handle('list-installed-apps', async () => {
   }
 });
 
+// Registry subkeys / apt package names / trash paths never legitimately
+// contain shell metacharacters — reject anything that does before it ever
+// reaches exec()/sudo.exec(), regardless of where `id` originated.
+function isSafeAppIdentifier(str) {
+  return typeof str === 'string' && str.length > 0 && str.length < 300 &&
+         !/[;&|`$<>\n\r"'\\]/.test(str);
+}
+
 ipcMain.handle('uninstall-app', async (event, id) => {
   const platform = os.platform();
 
-  try {
-    if (platform === 'win32') {
-      const { apps } = await require('electron').ipcMain.emit; // placeholder not used
-    }
-    // Re-fetch fresh app list to get the uninstall command (avoids trusting stale renderer state)
-    if (platform === 'win32') {
-      const listResult = await new Promise((resolve) => {
-        ipcMain.emit('list-installed-apps'); resolve(null);
-      });
-    }
+  if (!isSafeAppIdentifier(id)) {
+    return { success: false, error: 'Invalid app identifier.' };
+  }
 
+  try {
     if (platform === 'win32') {
       // Look up the uninstall string again directly, since Windows needs the full command
       const psScript = `
