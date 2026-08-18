@@ -151,6 +151,26 @@ ipcMain.handle('uninstall-cleanup', async () => {
 let tray = null;
 let mainWindow = null;
 
+// ─── Single instance lock ───────────────────────────────────────────────────
+// Without this, launching Nyxon a second time (e.g. Windows startup +
+// manually opening it, or a tray instance surviving a restart) spins up a
+// second full copy of the app — its own main process, GPU process, and
+// renderer — competing for CPU/disk with the first one. Only one instance
+// should ever run; a second launch attempt should just focus the existing
+// window instead.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (!mainWindow.isVisible()) mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
 function createTray() {
   // Use your app icon for the tray
   const iconPath = path.join(__dirname, 'assets', 'icon_512.png');
@@ -1375,12 +1395,13 @@ ipcMain.handle('activate-license', async (_, key) => {
       res.on('end', () => {
         try {
           const result = JSON.parse(data);
-          if (result.success) {
+                    if (result.success) {
             const licenseFile = path.join(app.getPath('userData'), 'license.json');
             fs.writeFileSync(licenseFile, JSON.stringify({
               key: result.key,
               tier: result.tier,
-              activatedAt: result.activatedAt
+              activatedAt: result.activatedAt,
+              lastVerifiedAt: Date.now()
             }));
           }
           resolve(result);
@@ -1429,31 +1450,52 @@ ipcMain.handle('check-license', async () => {
         let body = '';
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
-          try { resolve(JSON.parse(body)); }
-          catch { resolve({ valid: false, reason: 'Bad response from server.' }); }
+          // reachable:true means the server actually answered — its answer
+          // (valid/invalid) can be trusted. A parse failure means it answered
+          // with garbage, which we treat like "couldn't reach it" below.
+          try { resolve({ ...JSON.parse(body), reachable: true }); }
+          catch { resolve({ valid: false, reachable: false, reason: 'Bad response from server.' }); }
         });
       });
 
-      // Server unreachable / timed out → fail CLOSED, not open.
-      // (A network blip should not silently grant Pro to anyone who can
-      // interfere with this request — e.g. block/redirect it.)
-      req.on('error', () => resolve({ valid: false, reason: 'Could not reach license server.' }));
+      // Network error or timeout ≠ "license is invalid" — it just means we
+      // don't know. Don't conflate the two like before.
+      req.on('error', () => resolve({ valid: false, reachable: false, reason: 'Could not reach license server.' }));
       req.setTimeout(5000, () => {
         req.destroy();
-        resolve({ valid: false, reason: 'License server timed out.' });
+        resolve({ valid: false, reachable: false, reason: 'License server timed out.' });
       });
 
       req.write(payload);
       req.end();
     });
 
-    if (!result.valid) {
-      // Server says invalid — delete local license and revert to free
+    if (result.reachable && !result.valid) {
+      // Server was reachable and explicitly said this key is invalid/revoked
+      // — trust that immediately.
       fs.unlinkSync(licenseFile);
       addLog?.('License verification failed — reverted to Free.', 'error');
       return { active: false, tier: 'free' };
     }
 
+    if (!result.reachable) {
+      // Couldn't reach the server at all — offline, or DNS/network not up
+      // yet right after a reboot. Don't punish the user for that: stay Pro
+      // as long as we verified successfully within the last 7 days.
+      const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
+      const withinGracePeriod = (Date.now() - (data.lastVerifiedAt || 0)) < GRACE_PERIOD_MS;
+      if (withinGracePeriod) {
+        return { active: true, tier: 'pro' };
+      }
+      // Grace period expired and still unreachable — fall back to Free for
+      // now, but keep the file so it recovers automatically once the
+      // server is reachable again (nothing gets deleted here).
+      return { active: false, tier: 'free' };
+    }
+
+    // Reachable and valid — refresh the verification timestamp.
+    data.lastVerifiedAt = Date.now();
+    fs.writeFileSync(licenseFile, JSON.stringify(data));
     return { active: true, tier: 'pro' };
 
   } catch (_) {
