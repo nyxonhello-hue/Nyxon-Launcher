@@ -27,17 +27,31 @@
 }
 
 [data-theme="light"] {
-  --bg:        #f0eeff;
-  --surface:   rgba(255,255,255,0.7);
-  --surface2:  rgba(255,255,255,0.9);
-  --border:    rgba(100,80,200,0.12);
-  --border2:   rgba(100,80,200,0.22);
-  --text:      #1a1030;
-  --text2:     rgba(26,16,48,0.6);
-  --text3:     rgba(26,16,48,0.35);
-  --shadow:    0 8px 32px rgba(100,80,200,0.12);
-  --shadow-lg: 0 16px 56px rgba(100,80,200,0.18);
-  --glow:      rgba(139,92,246,0.08);
+  --bg:        #f4daaf;
+  --surface:   #f3e4e4;
+  --surface2:  #fff1e6;
+  --border:    #5b5750;
+  --border2:   #decec0;
+  --text:      #000000d7;
+  --text2:     #3d3b49;
+  --text3:     #5a5666;
+  --shadow:    0 4px 16px rgba(40,30,80,0.06);
+  --shadow-lg: 0 8px 24px rgba(40,30,80,0.12);
+  --glow:      rgba(139,92,246,0.06);
+}
+
+[data-theme="light"] .auto-card {
+  box-shadow: 0 14px 30px rgba(45, 28, 72, 0.08), 0 0 0 1px rgba(27, 24, 36, 0.12);
+  border-color: rgba(27, 24, 36, 0.16);
+}
+
+[data-theme="light"] .auto-card .card-bg-glow {
+  opacity: 0.32;
+  filter: saturate(1.1) brightness(1.15);
+}
+
+[data-theme="light"] .card-launch-btn {
+  box-shadow: 0 8px 18px rgba(91, 75, 128, 0.12);
 }
 
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
@@ -69,9 +83,37 @@ body {
 
 [data-theme="light"] .bg-canvas {
   background:
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(139,92,246,0.2) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(109,40,217,0.12) 0%, transparent 60%),
-    #f0eeff;
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(139,92,246,0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(109,40,217,0.06) 0%, transparent 60%),
+    var(--bg);
+}
+
+/* Light theme — stronger card typography and emphasis */
+[data-theme="light"] .stat-card,
+[data-theme="light"] .auto-card,
+[data-theme="light"] .card-body {
+  color: var(--text);
+}
+
+[data-theme="light"] .card-name,
+[data-theme="light"] .stat-card-val {
+  font-weight: 800;
+  color: var(--text);
+}
+
+[data-theme="light"] .card-desc,
+[data-theme="light"] .card-info-item {
+  font-weight: 600;
+  color: var(--text2);
+}
+
+[data-theme="light"] .stat-card-label {
+  font-weight: 700;
+  color: var(--text3);
+}
+
+[data-theme="light"] .card-launch-btn {
+  font-weight: 700;
 }
 
 /* Stars */
@@ -79,7 +121,7 @@ body {
 .star {
   position: absolute;
   border-radius: 50%;
-  background: #fff;
+  background: #f1cccc;
   animation: twinkle var(--dur, 3s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
 }
@@ -201,6 +243,12 @@ body {
   border-color: rgba(124,58,237,0.25);
 }
 
+[data-theme="light"] .nav-item.active {
+  background: rgba(124,58,237,0.1);
+  color: #5a28ab;
+  border-color: rgba(124,58,237,0.2);
+}
+
 .nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
 
 .nav-count {
@@ -210,8 +258,13 @@ body {
   padding: 2px 7px;
   border-radius: 8px;
   background: rgba(124,58,237,0.15);
-  color: #a78bfa;
+  color: rgb(91, 63, 176);
   letter-spacing: 0.05em;
+}
+
+[data-theme="light"] .nav-count {
+  background: rgba(50, 26, 105, 0.06);
+  color: var(--text2);
 }
 
 /* ── Sidebar Footer ── */
@@ -250,7 +303,7 @@ body {
   position: absolute;
   width: 12px; height: 12px;
   border-radius: 50%;
-  background: #fff;
+  background: #f4cccc;
   top: 3px; left: 3px;
   transition: all var(--transition);
   box-shadow: 0 1px 4px rgba(0,0,0,0.3);
@@ -283,6 +336,7 @@ body {
 }
 .tier-badge.free { background: rgba(251,191,36,0.15); color: #fbbf24; }
 .tier-badge.pro  { background: rgba(124,58,237,0.2); color: #a78bfa; }
+[data-theme="light"] .tier-badge.pro { color: #6d28d9; }
 
 .upgrade-btn {
   width: 100%;
@@ -298,6 +352,11 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   transition: all var(--transition);
+}
+
+[data-theme="light"] .upgrade-btn {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #fff;
 }
 .upgrade-btn:hover { background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(79,70,229,0.35)); }
 
@@ -391,6 +450,11 @@ body {
   position: relative;
   z-index: 1;
 }
+
+[data-theme="light"] .stat-card-val {
+  color: var(--card-accent, var(--text));
+}
+
 .stat-card-label {
   font-family: 'DM Mono', monospace;
   font-size: 10px;
@@ -443,6 +507,18 @@ body {
   overflow: hidden;
 }
 
+[data-theme="light"] .card-header-area {
+  background: var(--surface2);
+}
+
+[data-theme="light"] .card-bg-glow {
+  opacity: 0.05;
+}
+
+[data-theme="light"] .auto-card:hover .card-bg-glow {
+  opacity: 0.08;
+}
+
 .card-bg-glow {
   position: absolute;
   inset: 0;
@@ -474,6 +550,11 @@ body {
   transition: all var(--transition);
 }
 
+[data-theme="light"] .card-icon {
+  background: color-mix(in srgb, var(--card-accent, #7c3aed) 14%, white);
+  border-color: color-mix(in srgb, var(--card-accent, #7c3aed) 25%, white);
+}
+
 .auto-card:hover .card-icon { background: rgba(255,255,255,0.18); transform: scale(1.05); }
 
 .card-badge {
@@ -490,9 +571,20 @@ body {
   transition: all var(--transition);
 }
 
+[data-theme="light"] .card-badge {
+  background: color-mix(in srgb, var(--card-accent, #7c3aed) 12%, white);
+  color: var(--card-accent, #7c3aed);
+  border-color: color-mix(in srgb, var(--card-accent, #7c3aed) 22%, white);
+}
+
 .auto-card.running .card-badge {
   background: rgba(255,255,255,0.2);
   color: #fff;
+}
+[data-theme="light"] .auto-card.running .card-badge {
+  background: color-mix(in srgb, var(--card-accent, #7c3aed) 20%, white);
+  color: var(--card-accent, #7c3aed);
+  border-color: color-mix(in srgb, var(--card-accent, #7c3aed) 30%, white);
 }
 
 .card-name {
@@ -504,6 +596,11 @@ body {
   position: relative;
   z-index: 1;
   text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+}
+
+[data-theme="light"] .card-name {
+  color: var(--text);
+  text-shadow: none;
 }
 
 /* Card info strip — unique per card */
@@ -518,17 +615,25 @@ body {
 .card-info-item {
   font-family: 'DM Mono', monospace;
   font-size: 9px;
-  color: rgba(255,255,255,0.55);
+  color: rgba(123, 73, 73, 0.55);
   display: flex;
   align-items: center;
   gap: 4px;
   letter-spacing: 0.05em;
 }
 
+[data-theme="light"] .card-info-item {
+  color: var(--text3);
+}
+
 .card-info-dot {
   width: 3px; height: 3px;
   border-radius: 50%;
   background: rgba(255,255,255,0.3);
+}
+
+[data-theme="light"] .card-info-dot {
+  background: var(--border2);
 }
 
 /* Card body */
@@ -589,9 +694,26 @@ body {
   color: var(--text);
 }
 
+[data-theme="light"] .card-launch-btn {
+  background: var(--card-accent, #7c3aed);
+  border-color: var(--card-accent, #7c3aed);
+  color: #fff;
+  font-weight: 700;
+}
+
+[data-theme="light"] .card-launch-btn:hover {
+  background: var(--card-accent, #7c3aed);
+  border-color: var(--card-accent, #7c3aed);
+  color: #fff;
+  opacity: 0.88;
+}
+
 .card-launch-btn.running-state {
   border-color: var(--card-accent, #7c3aed);
   color: var(--text);
+}
+[data-theme="light"] .card-launch-btn.running-state {
+  color: #fff;
 }
 
 .btn-spinner {
@@ -670,6 +792,7 @@ body {
 .log-time  { color: var(--text3); flex-shrink: 0; }
 .log-msg   { color: var(--text2); }
 .log-entry.success .log-msg { color: #a78bfa; }
+[data-theme="light"] .log-entry.success .log-msg { color: #6d28d9; }
 .log-entry.error   .log-msg { color: #f87171; }
 .log-entry.info    .log-msg { color: #60a5fa; }
 .log-empty { font-size: 11px; color: var(--text3); margin: auto; text-align: center; }
@@ -759,7 +882,7 @@ body {
   gap: 10px;
   box-shadow: 0 8px 32px rgba(88,28,220,0.3);
   animation: toastIn 0.3s ease;
-  color: var(--text);
+  color: #f0f0ff;
   min-width: 240px;
   backdrop-filter: blur(20px);
 }
@@ -809,8 +932,10 @@ body {
 .settings-toggle::after { content:''; position:absolute; width:14px; height:14px; border-radius:50%; background:rgba(255,255,255,0.5); top:2px; left:2px; transition:all var(--transition); }
 .settings-toggle.on::after { left:18px; background:#fff; }
 .settings-btn { padding:7px 16px; border-radius:8px; border:1px solid rgba(124,58,237,0.25); background:transparent; color:#a78bfa; font-family:'DM Mono',monospace; font-size:11px; cursor:pointer; transition:all var(--transition); letter-spacing:0.05em; }
+[data-theme="light"] .settings-btn { color: #6d28d9; border-color: rgba(124,58,237,0.35); }
 .settings-btn:hover { border-color:#7c3aed; background:rgba(124,58,237,0.1); }
 .settings-btn.danger:hover { border-color:#f87171; color:#f87171; background:rgba(248,113,113,0.08); }
+[data-theme="light"] .settings-btn.danger:hover { color: #dc2626; }
 .settings-save { display:flex; gap:10px; padding:20px; border-top:1px solid var(--border); justify-content:flex-end; }
 .save-btn { padding:10px 24px; border-radius:10px; background:linear-gradient(135deg,#7c3aed,#4f46e5); border:none; color:#fff; font-family:'DM Mono',monospace; font-size:12px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(124,58,237,0.3); transition:opacity var(--transition); }
 .save-btn:hover { opacity:0.85; }
@@ -822,6 +947,154 @@ body {
 .cat-name { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.18em; color:var(--text3); text-transform:uppercase; flex:1; }
 .cat-count { font-family:'DM Mono',monospace; font-size:9px; color:var(--text3); padding:2px 7px; border-radius:8px; background:var(--surface); border:1px solid var(--border); }
 .cat-chevron { font-size:10px; color:var(--text3); transition:transform var(--transition); }
+
+/* ── Help Chat ── */
+.help-chat-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+}
+
+.help-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.help-header-icon {
+  width: 44px; height: 44px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 21px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(124,58,237,0.4);
+}
+
+.help-header-text { flex: 1; min-width: 0; }
+.help-chat-title {
+  font-size: 15px; font-weight: 800; letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #a78bfa, #818cf8);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.help-chat-sub { font-family:'DM Mono',monospace; font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+.help-online-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text2);
+  flex-shrink: 0;
+}
+.help-online-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #34d399; box-shadow: 0 0 8px rgba(52,211,153,0.6);
+  animation: pulse 2s infinite;
+}
+
+.help-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.help-chat-body::-webkit-scrollbar { width: 4px; }
+.help-chat-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.help-row { display: flex; gap: 10px; align-items: flex-end; animation: fadeIn 0.25s ease; }
+.help-row.user { flex-direction: row-reverse; }
+
+.help-avatar {
+  width: 26px; height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.help-msg {
+  max-width: 72%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.help-msg.bot  { background: var(--surface2); color: var(--text); border-bottom-left-radius: 4px; }
+.help-msg.user { background: linear-gradient(135deg,#7c3aed,#4f46e5); color: #fff; border-bottom-right-radius: 4px; }
+.help-msg a { color: inherit; text-decoration: underline; }
+
+.help-typing { display: flex; gap: 4px; padding: 4px 2px; }
+.help-typing span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text3);
+  animation: helpTypingBounce 1.2s infinite ease-in-out;
+}
+.help-typing span:nth-child(2) { animation-delay: 0.15s; }
+.help-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes helpTypingBounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-4px);opacity:1} }
+
+.help-chip-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 20px 16px; }
+.help-chip {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  padding: 7px 13px;
+  border-radius: 20px;
+  background: rgba(124,58,237,0.1);
+  border: 1px solid rgba(124,58,237,0.25);
+  color: #a78bfa;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+[data-theme="light"] .help-chip { color: #6d28d9; }
+.help-chip:hover { background: rgba(124,58,237,0.2); transform: translateY(-1px); }
+
+.help-chat-input-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; border-top: 1px solid var(--border);
+}
+.help-chat-input {
+  flex: 1;
+  background: rgba(124,58,237,0.08);
+  border: 1px solid rgba(124,58,237,0.2);
+  border-radius: 22px;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  padding: 11px 18px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.help-chat-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+.help-chat-send {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg,#7c3aed,#4f46e5);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(124,58,237,0.4);
+  transition: all var(--transition);
+}
+.help-chat-send:hover { transform: scale(1.06); }
+
+@keyframes pulse { 
+  0%,100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
 
 @keyframes fadeOut  { from{opacity:1} to{opacity:0} }
 </style>
@@ -866,6 +1139,9 @@ body {
     <div class="nav-label">App</div>
     <div class="nav-item" onclick="switchPage('settings',this)">
       <span class="nav-icon">⚙</span><span>Settings</span>
+    </div>
+    <div class="nav-item" onclick="switchPage('help',this)">
+      <span class="nav-icon">💬</span><span>Help</span>
     </div>
   </nav>
 
@@ -1012,6 +1288,26 @@ body {
       <button class="save-btn" onclick="commitSettings()">Save Changes</button>
     </div>
   </div>
+ 
+  <!-- HELP -->
+  <div class="page" id="page-help">
+    <div class="help-chat-wrap">
+      <div class="help-chat-header">
+        <div class="help-header-icon">🤖</div>
+        <div class="help-header-text">
+          <div class="help-chat-title">Nyxon Assistant</div>
+          <div class="help-chat-sub">Answers from Nyxon's own docs — works fully offline</div>
+        </div>
+        <div class="help-online-pill"><span class="help-online-dot"></span>Ready</div>
+      </div>
+      <div class="help-chat-body" id="help-chat-body"></div>
+      <div class="help-chip-row" id="help-chip-row"></div>
+      <div class="help-chat-input-row">
+        <input class="help-chat-input" id="help-chat-input" type="text" placeholder="Ask a question…" autocomplete="off"/>
+        <button class="help-chat-send" id="help-chat-send" aria-label="Send">➤</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="toast-container" id="toasts"></div>
@@ -1051,7 +1347,7 @@ const automations = [
     id:'file', type:'file', icon:'🗂', name:'File Organizer', badge:'File Ops',
     category:'File Management', tier:'free', duration:3200,
     gradient:'linear-gradient(135deg,#065f46,#047857)',
-    accent:'#34d399', glow:'#10b981',
+    accent:'#0f766e', glow:'#10b981',
     info:['Sorts by type','Creates folders','Conflict safe'],
     btnLabel:'Organize Files',
     desc:'Sort files by extension into labeled folders. Includes confirmation before moving anything.',
@@ -1061,7 +1357,7 @@ const automations = [
     id:'renamer', type:'renamer', icon:'✏', name:'Bulk Renamer', badge:'File Ops',
     category:'File Management', tier:'pro', duration:2000,
     gradient:'linear-gradient(135deg,#92400e,#b45309)',
-    accent:'#fbbf24', glow:'#f59e0b',
+    accent:'#b45309', glow:'#f59e0b',
     info:['Sequential naming','Custom base name','Sort first'],
     btnLabel:'Rename Files',
     desc:'Rename files sequentially with a custom base name. Item 1, Item 2, Item 3…',
@@ -1071,7 +1367,7 @@ const automations = [
     id:'backup', type:'backup', icon:'🛡', name:'Auto Backup', badge:'Backup',
     category:'File Management', tier:'pro', duration:3000,
     gradient:'linear-gradient(135deg,#1e3a5f,#1d4ed8)',
-    accent:'#60a5fa', glow:'#3b82f6',
+    accent:'#2563eb', glow:'#3b82f6',
     info:['Local · Drive · Dropbox','Scheduled daily','Dated folders'],
     btnLabel:'Start Backup',
     desc:'Backup to local folder, external drive, or cloud. Schedules daily runs automatically.',
@@ -1081,7 +1377,7 @@ const automations = [
     id:'duplicate', type:'duplicate', icon:'🔍', name:'Duplicate Detector', badge:'Scanner',
     category:'File Management', tier:'pro', duration:6500,
     gradient:'linear-gradient(135deg,#7f1d1d,#b91c1c)',
-    accent:'#f87171', glow:'#ef4444',
+    accent:'#dc2626', glow:'#ef4444',
     info:['MD5 checksums','Report or delete','Deep scan'],
     btnLabel:'Scan for Duplicates',
     desc:'Find exact duplicate files using checksums. Report only or delete duplicates automatically.',
@@ -1091,7 +1387,7 @@ const automations = [
     id:'system', type:'system', icon:'⚙', name:'System Flush', badge:'System',
     category:'System', tier:'free', duration:2000,
     gradient:'linear-gradient(135deg,#431407,#c2410c)',
-    accent:'#fb923c', glow:'#f97316',
+    accent:'#c2410c', glow:'#f97316',
     info:['Temp · Cache · Trash','Full clipboard clear','Shows MB freed'],
     btnLabel:'Flush System',
     desc:'Clear temp files, browser cache, full clipboard (text + images) and recycle bin.',
@@ -1101,7 +1397,7 @@ const automations = [
     id:'email', type:'email', icon:'✉', name:'Daily Digest', badge:'Email',
     category:'System', tier:'pro', duration:2600,
     gradient:'linear-gradient(135deg,#2e1065,#6d28d9)',
-    accent:'#c4b5fd', glow:'#8b5cf6',
+    accent:'#7c3aed', glow:'#8b5cf6',
     info:['CPU · RAM · Uptime','Desktop notification','Morning summary'],
     btnLabel:'Send Digest',
     desc:'Compile system stats and deliver a morning summary notification to your desktop.',
@@ -1111,7 +1407,7 @@ const automations = [
     id:'script', type:'script', icon:'⟩_', name:'Deploy Script', badge:'Script',
     category:'System', tier:'pro', duration:4000,
     gradient:'linear-gradient(135deg,#1c1917,#44403c)',
-    accent:'#d6d3d1', glow:'#a8a29e',
+    accent:'#5b5149', glow:'#a8a29e',
     info:['Python · Bash · Node','Real terminal','Auto-detects interpreter'],
     btnLabel:'Run Script',
     desc:'Pick any script file and run it in a real terminal window. Supports Python, Bash, Node.js.',
@@ -1121,7 +1417,7 @@ const automations = [
     id:'startup', type:'startup', icon:'🚀', name:'Startup Manager', badge:'System',
     category:'System', tier:'pro', duration:4000,
     gradient:'linear-gradient(135deg,#0c4a6e,#0369a1)',
-    accent:'#38bdf8', glow:'#0ea5e9',
+    accent:'#0369a1', glow:'#0ea5e9',
     info:['View all entries','Opens system settings','All platforms'],
     btnLabel:'Manage Startup',
     desc:'See everything that launches at startup, with a direct link to your systems settings to turn any of it off.',
@@ -1131,7 +1427,7 @@ const automations = [
     id:'netchecker', type:'netchecker', icon:'📡', name:'Internet Checker', badge:'Network',
     category:'Network & Web', tier:'free', duration:5000,
     gradient:'linear-gradient(135deg,#0f172a,#1e3a5f)',
-    accent:'#818cf8', glow:'#6366f1',
+    accent:'#4f46e5', glow:'#6366f1',
     info:['4 hosts · 3 pings each','Avg latency','Connection quality'],
     btnLabel:'Check Connection',
     desc:'Ping 4 hosts 3 times each and report stable average latency and connection quality.',
@@ -1141,7 +1437,7 @@ const automations = [
     id:'pwgen', type:'pwgen', icon:'🔑', name:'Password Generator', badge:'Generate',
     category:'Network & Web', tier:'free', duration:1000,
     gradient:'linear-gradient(135deg,#0f172a,#312e81)',
-    accent:'#a5b4fc', glow:'#818cf8',
+    accent:'#4338ca', glow:'#818cf8',
     info:['Cryptographically secure','Customizable','Copy to clipboard'],
     btnLabel:'Generate Password',
     desc:'Generate strong, random passwords with full control over length and character types.',
@@ -1151,7 +1447,7 @@ const automations = [
     id:'web', type:'web', icon:'🌐', name:'Launch Workspace', badge:'Web',
     category:'Network & Web', tier:'pro', duration:1800,
     gradient:'linear-gradient(135deg,#042f2e,#0f766e)',
-    accent:'#2dd4bf', glow:'#14b8a6',
+    accent:'#0f766e', glow:'#14b8a6',
     info:['Saved URL sets','One-click launch','Multiple workspaces'],
     btnLabel:'Open Workspace',
     desc:'Save named sets of URLs — Work, Dev, Personal — and open your entire workspace in one click.',
@@ -1161,7 +1457,7 @@ const automations = [
     id:'assessment', type:'assessment', icon:'📊', name:'Company Assessment', badge:'Diagnostic',
     category:'Business', tier:'pro', duration:8000,
     gradient:'linear-gradient(135deg,#451a03,#92400e)',
-    accent:'#fcd34d', glow:'#f59e0b',
+    accent:'#b45309', glow:'#f59e0b',
     info:['CPU · RAM · Disk · Network','Security scan','Score + report'],
     btnLabel:'Run Assessment',
     desc:'Full system diagnostic. Scores CPU, memory, disk, network, and security. Sends report to Nyxon.',
@@ -1171,7 +1467,7 @@ const automations = [
     id:'feedback', type:'feedback', icon:'⭐', name:'Rate Nyxon', badge:'Feedback',
     category:'Business', tier:'free', duration:2000,
     gradient:'linear-gradient(135deg,#1a1a2e,#4c1d95)',
-    accent:'#a78bfa', glow:'#7c3aed',
+    accent:'#6d28d9', glow:'#7c3aed',
     info:['Star rating','Quick survey','Helps us improve'],
     btnLabel:'Leave Feedback',
     desc:'Rate the app and share your thoughts. Takes 60 seconds and helps shape future updates.',
@@ -1181,7 +1477,7 @@ const automations = [
     id:'contact', type:'contact', icon:'📬', name:'Contact Nyxon', badge:'Contact',
     category:'Business', tier:'free', duration:1500,
     gradient:'linear-gradient(135deg,#0f172a,#312e81)',
-    accent:'#a5b4fc', glow:'#818cf8',
+    accent:'#4338ca', glow:'#818cf8',
     info:['Direct message','Subject categories','Fast response'],
     btnLabel:'Send Message',
     desc:'Get in touch with the Nyxon team directly from the app for support or partnerships.',
@@ -1191,7 +1487,7 @@ const automations = [
     id:'scraper', type:'scraper', icon:'🕷', name:'Web Scraper', badge:'Scrape',
     category:'Network & Web', tier:'pro', duration:5000,
     gradient:'linear-gradient(135deg,#1a0533,#6d28d9)',
-    accent:'#c084fc', glow:'#a855f7',
+    accent:'#7e22ce', glow:'#a855f7',
     info:['CSS selector','Multi-page','CSV · JSON · Excel'],
     btnLabel:'Start Scraping',
     desc:'Scrape data from any website using CSS selectors. Export to CSV, JSON or Excel.',
@@ -1201,162 +1497,162 @@ const automations = [
     id:'pdf2img', type:'pdf2img', icon:'🖼', name:'PDF to Image', badge:'Convert',
     category:'File Management', tier:'pro', duration:4000,
     gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
-    accent:'#93c5fd', glow:'#60a5fa',
+    accent:'#2563eb', glow:'#60a5fa',
     info:['PNG · JPEG','Custom resolution','Batch pages'],
     btnLabel:'Convert PDF',
     desc:'Convert any PDF into high-resolution PNG or JPEG images, one file per page.',
     steps:['Opening PDF…','Rendering pages…','Exporting images…','Done.']
   },
   {
-  id:'img2pdf', type:'img2pdf', icon:'📑', name:'Image to PDF', badge:'Convert',
-  category:'File Management', tier:'pro', duration:4000,
-  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
-  accent:'#93c5fd', glow:'#60a5fa',
-  info:['JPG · PNG','Multi-image','Custom page size'],
-  btnLabel:'Convert to PDF',
-  desc:'Combine one or more images into a single PDF — one image per page.',
-  steps:['Selecting images…','Building PDF…','Saving file…','Done.']
-},
+    id:'img2pdf', type:'img2pdf', icon:'📑', name:'Image to PDF', badge:'Convert',
+    category:'File Management', tier:'pro', duration:4000,
+    gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    accent:'#2563eb', glow:'#60a5fa',
+    info:['JPG · PNG','Multi-image','Custom page size'],
+    btnLabel:'Convert to PDF',
+    desc:'Combine one or more images into a single PDF — one image per page.',
+    steps:['Selecting images…','Building PDF…','Saving file…','Done.']
+  },
   {
-  id:'compressor', type:'compressor', icon:'🗜', name:'File Compressor', badge:'Zip',
-  category:'File Management', tier:'pro', duration:4000,
-  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
-  accent:'#93c5fd', glow:'#60a5fa',
-  info:['Files or folder','Adjustable ratio','.zip output'],
-  btnLabel:'Compress',
-  desc:'Bundle files or an entire folder into a single compressed .zip archive.',
-  steps:['Selecting items…','Compressing…','Saving archive…','Done.']
-},
-{
-  id:'qrcode', type:'qrcode', icon:'▦', name:'QR Code Generator', badge:'Generate',
-  category:'Network & Web', tier:'free', duration:2000,
-  gradient:'linear-gradient(135deg,#0f172a,#312e81)',
-  accent:'#a5b4fc', glow:'#818cf8',
-  info:['Any URL or text','PNG output','Custom size'],
-  btnLabel:'Generate QR Code',
-  desc:'Turn any URL or text into a scannable QR code image.',
-  steps:['Encoding…','Rendering…','Saving…','Done.']
-},
-{
-  id:'dnscleaner', type:'dnscleaner', icon:'🌐', name:'DNS Cleaner', badge:'Flush',
-  category:'Network & Web', tier:'free', duration:3000,
-  gradient:'linear-gradient(135deg,#0f172a,#312e81)',
-  accent:'#a5b4fc', glow:'#818cf8',
-  info:['Flush DNS cache','Fixes connectivity','One click'],
-  btnLabel:'Flush DNS',
-  desc:'Clear your system\'s DNS cache — fixes stale sites, slow lookups, and connection glitches.',
-  steps:['Flushing DNS cache…','Restarting resolver…','Done.']
-},
-{
-  id:'invoice', type:'invoice', icon:'🧾', name:'Invoice Generator', badge:'Generate',
-  category:'Business', tier:'pro', duration:3000,
-  gradient:'linear-gradient(135deg,#0f172a,#312e81)',
-  accent:'#a5b4fc', glow:'#818cf8',
-  info:['Line items','Auto tax + total','PDF output'],
-  btnLabel:'Generate Invoice',
-  desc:'Fill in client and line-item details to generate a clean PDF invoice.',
-  steps:['Building layout…','Calculating totals…','Saving PDF…','Done.']
-},
-{
-  id:'filesplitter', type:'filesplitter', icon:'✂', name:'File Splitter', badge:'Split',
-  category:'File Management', tier:'pro', duration:3000,
-  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
-  accent:'#93c5fd', glow:'#60a5fa',
-  info:['Split by size','Rejoin chunks','Any file type'],
-  btnLabel:'Split or Join',
-  desc:'Split a large file into smaller chunks, or rejoin chunks back into the original file.',
-  steps:['Reading file…','Writing chunks…','Done.']
-},
-{
-  id:'expensetracker', type:'expensetracker', icon:'💰', name:'Expense Tracker', badge:'Export',
-  category:'Business', tier:'pro', duration:2000,
-  gradient:'linear-gradient(135deg,#0f172a,#312e81)',
-  accent:'#a5b4fc', glow:'#818cf8',
-  info:['Persists between sessions','Categorized','Excel export'],
-  btnLabel:'Open Tracker',
-  desc:'Log expenses over time and export them to Excel whenever you need a report.',
-  steps:['Loading entries…','Ready.']
-},
-{
-  id:'clipboardhistory', type:'clipboardhistory', icon:'📋', name:'Clipboard History', badge:'Track',
-  category:'System', tier:'pro', duration:1500,
-  gradient:'linear-gradient(135deg,#312e81,#1e1b4b)',
-  accent:'#a78bfa', glow:'#8b5cf6',
-  info:['Auto-tracks copies','Pin favorites','Click to re-copy'],
-  btnLabel:'Open History',
-  desc:'Keep a rolling history of everything you copy, with pinning and quick re-copy.',
-  steps:['Loading history…','Ready.']
-},
-{
-  id:'appuninstaller', type:'appuninstaller', icon:'🗑', name:'App Uninstaller Helper', badge:'Manage',
-  category:'System', tier:'pro', duration:2000,
-  gradient:'linear-gradient(135deg,#312e81,#1e1b4b)',
-  accent:'#a78bfa', glow:'#8b5cf6',
-  info:['Lists installed apps','Shows sizes','One-click uninstall'],
-  btnLabel:'View Apps',
-  desc:'See every installed app with its size, and uninstall the ones you don\'t need — safely, using the OS\'s own uninstaller.',
-  steps:['Scanning installed apps…','Ready.']
-},
-{
-  id:'mediaconverter', type:'mediaconverter', icon:'🎬', name:'Video/Audio Converter', badge:'Convert',
-  category:'File Management', tier:'pro', duration:5000,
-  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
-  accent:'#93c5fd', glow:'#60a5fa',
-  info:['MP4 · WEBM · MP3 · WAV','Extract audio','Batch-friendly'],
-  btnLabel:'Convert Media',
-  desc:'Convert video and audio files between formats, or extract audio from a video.',
-  steps:['Analyzing file…','Converting…','Saving…','Done.']
-},
-{
-  id:'videocompressor', type:'videocompressor', icon:'📉', name:'Video Compressor', badge:'Shrink',
-  category:'File Management', tier:'pro', duration:5000,
-  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
-  accent:'#93c5fd', glow:'#60a5fa',
-  info:['Adjustable quality','Keeps format','Great for email/upload limits'],
-  btnLabel:'Compress Video',
-  desc:'Shrink a video file\'s size while keeping it watchable — pick your quality/size tradeoff.',
-  steps:['Analyzing video…','Compressing…','Saving…','Done.']
-},
-{
-  id:'pdfmerge', type:'pdfmerge', icon:'🔗', name:'Merge PDFs', badge:'Combine',
-  category:'File Management', tier:'pro', duration:2500,
-  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
-  accent:'#93c5fd', glow:'#60a5fa',
-  info:['Combine multiple PDFs','Keeps page order','One click'],
-  btnLabel:'Merge PDFs',
-  desc:'Combine two or more PDFs into a single document, in the order you select them.',
-  steps:['Selecting files…','Merging…','Saving…','Done.']
-},
-{
-  id:'pdfprotect', type:'pdfprotect', icon:'🔒', name:'PDF Watermark & Protect', badge:'Secure',
-  category:'File Management', tier:'pro', duration:3000,
-  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
-  accent:'#93c5fd', glow:'#60a5fa',
-  info:['Add watermark text','Password protect','Both or either'],
-  btnLabel:'Protect PDF',
-  desc:'Stamp a watermark across every page and/or lock a PDF with a password.',
-  steps:['Opening PDF…','Applying watermark…','Encrypting…','Done.']
-},
-{
-  id:'imagetotext', type:'imagetotext', icon:'📝', name:'Image to Text', badge:'OCR',
-  category:'File Management', tier:'pro', duration:4000,
-  gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
-  accent:'#93c5fd', glow:'#60a5fa',
-  info:['Photos of handouts','Works offline','Copy or save .txt'],
-  btnLabel:'Extract Text',
-  desc:'Turn a photo of a handout, textbook page, or whiteboard into editable text — no internet needed.',
-  steps:['Reading image…','Recognizing text…','Cleaning up…','Done.']
-},
-{
-  id:'largefiles', type:'largefiles', icon:'📦', name:'Large File Finder', badge:'Scan',
-  category:'System', tier:'pro', duration:4000,
-  gradient:'linear-gradient(135deg,#431407,#c2410c)',
-  accent:'#fb923c', glow:'#f97316',
-  info:['Choose location','Adjustable size','Delete or open'],
-  btnLabel:'Find Large Files',
-  desc:'Scan a folder for the files actually taking up your space — the ones temp cleanup never touches.',
-  steps:['Scanning folder…','Sorting by size…','Done.']
-},
+    id:'compressor', type:'compressor', icon:'🗜', name:'File Compressor', badge:'Zip',
+    category:'File Management', tier:'pro', duration:4000,
+    gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    accent:'#2563eb', glow:'#60a5fa',
+    info:['Files or folder','Adjustable ratio','.zip output'],
+    btnLabel:'Compress',
+    desc:'Bundle files or an entire folder into a single compressed .zip archive.',
+    steps:['Selecting items…','Compressing…','Saving archive…','Done.']
+  },
+  {
+    id:'qrcode', type:'qrcode', icon:'▦', name:'QR Code Generator', badge:'Generate',
+    category:'Network & Web', tier:'free', duration:2000,
+    gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+    accent:'#4338ca', glow:'#818cf8',
+    info:['Any URL or text','PNG output','Custom size'],
+    btnLabel:'Generate QR Code',
+    desc:'Turn any URL or text into a scannable QR code image.',
+    steps:['Encoding…','Rendering…','Saving…','Done.']
+  },
+  {
+    id:'dnscleaner', type:'dnscleaner', icon:'🌐', name:'DNS Cleaner', badge:'Flush',
+    category:'Network & Web', tier:'free', duration:3000,
+    gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+    accent:'#4338ca', glow:'#818cf8',
+    info:['Flush DNS cache','Fixes connectivity','One click'],
+    btnLabel:'Flush DNS',
+    desc:'Clear your system\'s DNS cache — fixes stale sites, slow lookups, and connection glitches.',
+    steps:['Flushing DNS cache…','Restarting resolver…','Done.']
+  },
+  {
+    id:'invoice', type:'invoice', icon:'🧾', name:'Invoice Generator', badge:'Generate',
+    category:'Business', tier:'pro', duration:3000,
+    gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+    accent:'#4338ca', glow:'#818cf8',
+    info:['Line items','Auto tax + total','PDF output'],
+    btnLabel:'Generate Invoice',
+    desc:'Fill in client and line-item details to generate a clean PDF invoice.',
+    steps:['Building layout…','Calculating totals…','Saving PDF…','Done.']
+  },
+  {
+    id:'filesplitter', type:'filesplitter', icon:'✂', name:'File Splitter', badge:'Split',
+    category:'File Management', tier:'pro', duration:3000,
+    gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    accent:'#2563eb', glow:'#60a5fa',
+    info:['Split by size','Rejoin chunks','Any file type'],
+    btnLabel:'Split or Join',
+    desc:'Split a large file into smaller chunks, or rejoin chunks back into the original file.',
+    steps:['Reading file…','Writing chunks…','Done.']
+  },
+  {
+    id:'expensetracker', type:'expensetracker', icon:'💰', name:'Expense Tracker', badge:'Export',
+    category:'Business', tier:'pro', duration:2000,
+    gradient:'linear-gradient(135deg,#0f172a,#312e81)',
+    accent:'#4338ca', glow:'#818cf8',
+    info:['Persists between sessions','Categorized','Excel export'],
+    btnLabel:'Open Tracker',
+    desc:'Log expenses over time and export them to Excel whenever you need a report.',
+    steps:['Loading entries…','Ready.']
+  },
+  {
+    id:'clipboardhistory', type:'clipboardhistory', icon:'📋', name:'Clipboard History', badge:'Track',
+    category:'System', tier:'pro', duration:1500,
+    gradient:'linear-gradient(135deg,#312e81,#1e1b4b)',
+    accent:'#6d28d9', glow:'#8b5cf6',
+    info:['Auto-tracks copies','Pin favorites','Click to re-copy'],
+    btnLabel:'Open History',
+    desc:'Keep a rolling history of everything you copy, with pinning and quick re-copy.',
+    steps:['Loading history…','Ready.']
+  },
+  {
+    id:'appuninstaller', type:'appuninstaller', icon:'🗑', name:'App Uninstaller Helper', badge:'Manage',
+    category:'System', tier:'pro', duration:2000,
+    gradient:'linear-gradient(135deg,#312e81,#1e1b4b)',
+    accent:'#6d28d9', glow:'#8b5cf6',
+    info:['Lists installed apps','Shows sizes','One-click uninstall'],
+    btnLabel:'View Apps',
+    desc:'See every installed app with its size, and uninstall the ones you don\'t need — safely, using the OS\'s own uninstaller.',
+    steps:['Scanning installed apps…','Ready.']
+  },
+  {
+    id:'mediaconverter', type:'mediaconverter', icon:'🎬', name:'Video/Audio Converter', badge:'Convert',
+    category:'File Management', tier:'pro', duration:5000,
+    gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    accent:'#2563eb', glow:'#60a5fa',
+    info:['MP4 · WEBM · MP3 · WAV','Extract audio','Batch-friendly'],
+    btnLabel:'Convert Media',
+    desc:'Convert video and audio files between formats, or extract audio from a video.',
+    steps:['Analyzing file…','Converting…','Saving…','Done.']
+  },
+  {
+    id:'videocompressor', type:'videocompressor', icon:'📉', name:'Video Compressor', badge:'Shrink',
+    category:'File Management', tier:'pro', duration:5000,
+    gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    accent:'#2563eb', glow:'#60a5fa',
+    info:['Adjustable quality','Keeps format','Great for email/upload limits'],
+    btnLabel:'Compress Video',
+    desc:'Shrink a video file\'s size while keeping it watchable — pick your quality/size tradeoff.',
+    steps:['Analyzing video…','Compressing…','Saving…','Done.']
+  },
+  {
+    id:'pdfmerge', type:'pdfmerge', icon:'🔗', name:'Merge PDFs', badge:'Combine',
+    category:'File Management', tier:'pro', duration:2500,
+    gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    accent:'#2563eb', glow:'#60a5fa',
+    info:['Combine multiple PDFs','Keeps page order','One click'],
+    btnLabel:'Merge PDFs',
+    desc:'Combine two or more PDFs into a single document, in the order you select them.',
+    steps:['Selecting files…','Merging…','Saving…','Done.']
+  },
+  {
+    id:'pdfprotect', type:'pdfprotect', icon:'🔒', name:'PDF Watermark & Protect', badge:'Secure',
+    category:'File Management', tier:'pro', duration:3000,
+    gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    accent:'#2563eb', glow:'#60a5fa',
+    info:['Add watermark text','Password protect','Both or either'],
+    btnLabel:'Protect PDF',
+    desc:'Stamp a watermark across every page and/or lock a PDF with a password.',
+    steps:['Opening PDF…','Applying watermark…','Encrypting…','Done.']
+  },
+  {
+    id:'imagetotext', type:'imagetotext', icon:'📝', name:'Image to Text', badge:'OCR',
+    category:'File Management', tier:'pro', duration:4000,
+    gradient:'linear-gradient(135deg,#1e1b4b,#4338ca)',
+    accent:'#2563eb', glow:'#60a5fa',
+    info:['Photos of handouts','Works offline','Copy or save .txt'],
+    btnLabel:'Extract Text',
+    desc:'Turn a photo of a handout, textbook page, or whiteboard into editable text — no internet needed.',
+    steps:['Reading image…','Recognizing text…','Cleaning up…','Done.']
+  },
+  {
+    id:'largefiles', type:'largefiles', icon:'📦', name:'Large File Finder', badge:'Scan',
+    category:'System', tier:'pro', duration:4000,
+    gradient:'linear-gradient(135deg,#431407,#c2410c)',
+    accent:'#c2410c', glow:'#f97316',
+    info:['Choose location','Adjustable size','Delete or open'],
+    btnLabel:'Find Large Files',
+    desc:'Scan a folder for the files actually taking up your space — the ones temp cleanup never touches.',
+    steps:['Scanning folder…','Sorting by size…','Done.']
+  }
 ];
 
 const PRO_AUTOMATIONS = new Set(automations.filter(a=>a.tier==='pro').map(a=>a.id));
@@ -1534,15 +1830,96 @@ function toggleCat(header) {
   chevron.style.transform = collapsed ? '' : 'rotate(-90deg)';
 }
 
+// ── Help Assistant — fully offline, keyword-matched against Nyxon's own docs ──
+const helpFAQ = [
+  { keys: ['pro','upgrade','license','key','buy','purchase','price','cost'],
+    a: `Nyxon Pro is a one-time GH₵17 payment — no subscription. Click "Upgrade to Pro" in the sidebar, or on any locked automation, to activate a license key. Don't have one yet? <a href="#" onclick="window.open('https://nyxon-server.onrender.com/pro');return false;">Get Nyxon Pro →</a>` },
+  { keys: ['lost','lose','disappeared','restart','reboot','pro stopped','not pro anymore'],
+    a: `If Nyxon shows Free right after restarting your PC, it's usually because your license check couldn't reach the server yet (Wi-Fi/network isn't ready in the first few seconds after boot). It should recover automatically within a few seconds once you're online — your license isn't actually lost.` },
+  { keys: ['organize','organizer','sort files','file organizer'],
+    a: `File Organizer sorts files in a folder you choose into labeled subfolders by type (Images, Documents, Videos, etc). It always asks for confirmation before moving anything, and you can undo the last run from Settings → "Undo last File Organize."` },
+  { keys: ['rename','renamer','bulk rename'],
+    a: `Bulk Renamer (Pro) renames every file in a folder sequentially using a base name you choose — e.g. "Vacation 1", "Vacation 2"... Pick the folder, set a starting number, and go.` },
+  { keys: ['backup','google drive','dropbox','onedrive'],
+    a: `Auto Backup (Pro) can save to a local folder, an external drive, Google Drive, or Dropbox. Cloud destinations need a one-time "Connect" step in the backup dialog before your first backup.` },
+  { keys: ['scrape','scraper','css selector','scraping'],
+    a: `Web Scraper (Pro) pulls data from any page using a CSS selector you provide — right-click any element in your browser → Inspect to find one. Use "Preview" first to check your selector works before exporting.` },
+  { keys: ['pdf protect','password protect','watermark','pdf password'],
+    a: `PDF Watermark & Protect (Pro) can add a watermark, a password, or both. If you see a file ending in "-NOT-password-protected.pdf", the password step failed — that file is NOT secured, even though the watermark worked. Try again, and contact support if it keeps failing.` },
+  { keys: ['ocr','image to text','extract text','scan text'],
+    a: `Image to Text (Pro) works fully offline — no internet needed. It works best with clear, well-lit photos; very blurry images may not recognize well. The extracted text is copied to your clipboard and saved as a .txt file automatically.` },
+  { keys: ['slow','startup','takes long','won\'t open','wont open','freezes'],
+    a: `If Nyxon is slow to open, especially right after restarting your PC, it's usually antivirus software re-scanning the app's files from a cold cache — that's normal and should pass. If it happens every single time, or the app never opens at all, use Contact Nyxon and describe what you're seeing.` },
+  { keys: ['mac','macos','apple','mac os'],
+    a: `Nyxon currently supports Windows and Linux. macOS support is planned but not available yet.` },
+  { keys: ['downloads','where','saved','find my file','output'],
+    a: `Most automations save their output to your Downloads folder and open it automatically when finished. Expense Tracker exports and a few others may ask you to pick a location instead.` },
+  { keys: ['contact','support','help','human','talk to someone','bug','report'],
+    a: `For anything I can't answer, use "Contact Nyxon" in the Business category — it goes directly to the Nyxon team.` },
+];
+
+const helpSuggestions = ['How do I get Pro?', 'Where are my files saved?', 'Is there a Mac version?', 'App is slow to open'];
+
+function findHelpAnswer(question) {
+  const q = question.toLowerCase();
+  let best = null, bestScore = 0;
+  for (const entry of helpFAQ) {
+    const score = entry.keys.reduce((s, k) => s + (q.includes(k) ? 1 : 0), 0);
+    if (score > bestScore) { bestScore = score; best = entry; }
+  }
+  if (best && bestScore > 0) return best.a;
+  return `I don't have an answer for that yet. Try "Contact Nyxon" (in the Business category) and the team will help directly.`;
+}
+
+function addHelpMessage(text, from) {
+  const body = document.getElementById('help-chat-body');
+  const row = document.createElement('div');
+  row.className = `help-row ${from}`;
+  const avatar = from === 'bot' ? `<div class="help-avatar">🤖</div>` : '';
+  const content = from === 'user' ? escapeHtml(text) : text; // bot text is our own FAQ copy, safe to trust
+  row.innerHTML = `${avatar}<div class="help-msg ${from}">${content}</div>`;
+  body.appendChild(row);
+  body.scrollTop = body.scrollHeight;
+  return row;
+}
+
+function sendHelpMessage(text) {
+  const question = (text ?? document.getElementById('help-chat-input').value).trim();
+  if (!question) return;
+  addHelpMessage(question, 'user');
+  document.getElementById('help-chat-input').value = '';
+  document.getElementById('help-chip-row').innerHTML = ''; // clear suggestions after first real question
+
+  const typingRow = addHelpMessage(`<div class="help-typing"><span></span><span></span><span></span></div>`, 'bot');
+  setTimeout(() => {
+    typingRow.remove();
+    addHelpMessage(findHelpAnswer(question), 'bot');
+  }, 500 + Math.random() * 400);
+}
+
+function initHelpChat() {
+  const body = document.getElementById('help-chat-body');
+  if (body.dataset.inited) return;
+  body.dataset.inited = '1';
+  addHelpMessage(`Hi! I'm the Nyxon Assistant. Ask me about any automation, licensing, or something that's not working.`, 'bot');
+
+  const chipRow = document.getElementById('help-chip-row');
+  chipRow.innerHTML = helpSuggestions.map(s => `<span class="help-chip" onclick="sendHelpMessage('${s.replace(/'/g, "\\'")}')">${s}</span>`).join('');
+
+  document.getElementById('help-chat-send').onclick = () => sendHelpMessage();
+  document.getElementById('help-chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendHelpMessage(); });
+}
+
 // ── Page Switching ────────────────────────────────────────────────────────────
 function switchPage(page, el, filter) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-  const titles = {dashboard:'Dashboard', settings:'Settings', automations: filter || 'Automations'};
+  const titles = {dashboard:'Dashboard', settings:'Settings', help:'Help', automations: filter || 'Automations'};
   document.getElementById('topbar-title').textContent = titles[page];
   if (page === 'automations') renderAutomations(filter);
+  if (page === 'help') initHelpChat();
 }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
