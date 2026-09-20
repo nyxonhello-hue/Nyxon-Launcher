@@ -273,6 +273,8 @@ function toggleWindow() {
   }
 }
 
+Menu.setApplicationMenu(null);
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1100,
