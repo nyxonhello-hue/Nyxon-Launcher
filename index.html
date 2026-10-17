@@ -412,7 +412,7 @@ body {
 /* ── Dashboard Stats ── */
 .dash-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 14px;
   margin-bottom: 28px;
 }
@@ -807,6 +807,15 @@ body {
   animation: fadeIn 0.15s ease;
 }
 
+/* Ensure Upgrade/Modal text is dark in light theme */
+[data-theme="light"] .modal, [data-theme="light"] .modal * {
+  color: var(--text) !important;
+}
+/* Keep the feature checkmark purple */
+[data-theme="light"] .modal .pro-feature-item span:first-child {
+  color: #a78bfa !important;
+}
+
 .modal {
   background: #0f0a1e;
   border: 1px solid rgba(124,58,237,0.3);
@@ -901,6 +910,9 @@ body {
 .ob-body { font-family:'DM Mono',monospace; font-size:12px; color:rgba(255,255,255,0.4); line-height:1.8; margin-bottom:28px; position:relative; }
 .ob-features { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:28px; position:relative; }
 .ob-feature { background:rgba(124,58,237,0.1); border:1px solid rgba(124,58,237,0.2); border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:9px; font-size:12px; color:rgba(255,255,255,0.8); }
+.pro-feature-item span {
+  color: var(--text);
+}
 .ob-badge { margin-left:auto; font-family:'DM Mono',monospace; font-size:9px; padding:2px 6px; border-radius:4px; letter-spacing:0.05em; }
 .ob-badge.free { background:rgba(167,139,250,0.15); color:#a78bfa; }
 .ob-badge.pro  { background:rgba(251,191,36,0.15); color:#fbbf24; }
@@ -1199,15 +1211,6 @@ body {
       <span class="theme-row-label" id="theme-label">🌙 Dark mode</span>
       <div class="theme-sw on" id="theme-sw"></div>
     </div>
-    <div class="license-box">
-      <div class="license-row">
-        <span class="license-label">License</span>
-        <span class="tier-badge free" id="sidebar-tier">Free</span>
-      </div>
-      <div id="sidebar-upgrade-wrap">
-        <button class="upgrade-btn" onclick="showUpgradeModal()">⭐ Upgrade to Pro</button>
-      </div>
-    </div>
   </div>
 </aside>
 
@@ -1234,18 +1237,6 @@ body {
         <div class="stat-card-icon">⚡</div>
         <div class="stat-card-val" id="dash-total-count" style="background:linear-gradient(135deg,#a78bfa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">0</div>
         <div class="stat-card-label">Automations</div>
-      </div>
-      <div class="stat-card" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.06));">
-        <div class="stat-card-glow" style="background:linear-gradient(135deg,#10b981,#059669);"></div>
-        <div class="stat-card-icon">🆓</div>
-        <div class="stat-card-val" id="dash-free-count" style="color:#34d399;">0</div>
-        <div class="stat-card-label">Free Tools</div>
-      </div>
-      <div class="stat-card" style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.06));">
-        <div class="stat-card-glow" style="background:linear-gradient(135deg,#f59e0b,#d97706);"></div>
-        <div class="stat-card-icon">⭐</div>
-        <div class="stat-card-val" id="dash-pro-count" style="color:#fbbf24;">0</div>
-        <div class="stat-card-label">Pro Tools</div>
       </div>
       <div class="stat-card" style="background:linear-gradient(135deg,rgba(236,72,153,0.12),rgba(190,24,93,0.06));">
         <div class="stat-card-glow" style="background:linear-gradient(135deg,#ec4899,#be185d);"></div>
@@ -1274,7 +1265,7 @@ body {
         <button class="mini-assistant-send" onclick="sendMiniAssistant()">➤</button>
       </div>
       <div class="mini-assistant-chips">
-        <span class="mini-chip" onclick="quickMiniAssistant('How do I get Pro?')">💡 How do I get Pro?</span>
+        <span class="mini-chip" onclick="quickMiniAssistant('What automations are included?')">💡 What automations are included?</span>
         <span class="mini-chip" onclick="quickMiniAssistant('App is slow to open')">⚡ App is slow to open</span>
         <span class="mini-chip" onclick="switchPage('help', document.getElementById('nav-help'))">💬 Open full assistant →</span>
       </div>
@@ -1338,13 +1329,6 @@ body {
       <div class="settings-row"><div><div class="settings-row-label">Errors</div><div class="settings-row-sub">Notify when an automation fails</div></div><div class="settings-toggle on" id="toggle-error" onclick="this.classList.toggle('on')"></div></div>
       <div class="settings-row"><div><div class="settings-row-label">Daily Digest</div><div class="settings-row-sub">Show system stats notification</div></div><div class="settings-toggle on" id="toggle-digest" onclick="this.classList.toggle('on')"></div></div>
       <div class="settings-row"><div><div class="settings-row-label">Start minimized</div><div class="settings-row-sub">Launch app in system tray</div></div><div class="settings-toggle" id="toggle-minimized" onclick="this.classList.toggle('on')"></div></div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-header">🔑 License</div>
-      <div class="settings-row">
-        <div><div class="settings-row-label">Status</div><div class="settings-row-sub" id="settings-license-sub">Free tier — limited automations</div></div>
-        <button class="settings-btn" id="settings-upgrade-btn" onclick="showUpgradeModal()">Upgrade to Pro →</button>
-      </div>
     </div>
     <div class="settings-section">
       <div class="settings-section-header">🔧 Tools</div>
@@ -1728,9 +1712,7 @@ const automations = [
   }
 ];
 
-const PRO_AUTOMATIONS = new Set(automations.filter(a=>a.tier==='pro').map(a=>a.id));
 const running = new Set();
-let isPro = false;
 
 function getAutomationStats() {
   const byCategory = {};
@@ -1815,7 +1797,6 @@ const ipcMap = {
 
 // ── Card Builder ──────────────────────────────────────────────────────────────
 function buildCard(auto, delay = 0) {
-  const isLocked = PRO_AUTOMATIONS.has(auto.id) && !isPro;
   const card = document.createElement('div');
   card.className = 'auto-card';
   card.dataset.id = auto.id;
@@ -1828,17 +1809,12 @@ function buildCard(auto, delay = 0) {
     <div class="card-info-item">${item}</div>
   `).join('');
 
-  const badgeStyle = isLocked
-    ? 'background:rgba(251,191,36,0.15);color:#fbbf24;border-color:rgba(251,191,36,0.2);'
-    : '';
-  const badgeText = isLocked ? 'PRO' : auto.badge;
-
   card.innerHTML = `
     <div class="card-header-area">
       <div class="card-bg-glow" style="background:${auto.gradient};"></div>
       <div class="card-top-row">
         <div class="card-icon">${auto.icon}</div>
-        <span class="card-badge" id="badge-${auto.id}" style="${badgeStyle}">${badgeText}</span>
+        <span class="card-badge" id="badge-${auto.id}">${auto.badge}</span>
       </div>
       <div class="card-name">${auto.name}</div>
       <div class="card-info">${infoHtml}</div>
@@ -1846,11 +1822,10 @@ function buildCard(auto, delay = 0) {
     <div class="card-body">
       <div class="card-desc">${auto.desc}</div>
       <div class="progress-track"><div class="progress-fill" id="prog-${auto.id}" style="background:${auto.accent};"></div></div>
-      <button class="card-launch-btn" id="btn-${auto.id}" onclick="launch('${auto.id}')"
-        style="${isLocked ? `border-color:rgba(251,191,36,0.3);color:#fbbf24;` : ''}">
+      <button class="card-launch-btn" id="btn-${auto.id}" onclick="launch('${auto.id}')">
         <div class="btn-spinner"></div>
-        <span class="btn-arrow">${isLocked ? '🔒' : '▶'}</span>
-        <span class="btn-label">${isLocked ? 'Pro Feature' : auto.btnLabel}</span>
+        <span class="btn-arrow">▶</span>
+        <span class="btn-label">${auto.btnLabel}</span>
       </button>
     </div>
   `;
@@ -1891,7 +1866,7 @@ function openCommandPalette() {
         <div class="cmdk-item-icon" style="background:${a.accent}22;color:${a.accent};">${a.icon}</div>
         <div class="cmdk-item-body">
           <div class="cmdk-item-name">${a.name}</div>
-          <div class="cmdk-item-meta">${a.category} · ${PRO_AUTOMATIONS.has(a.id) ? 'Pro' : 'Free'}</div>
+          <div class="cmdk-item-meta">${a.category}</div>
         </div>
         <div class="cmdk-item-arrow">↵</div>
       </div>
@@ -1994,10 +1969,8 @@ function toggleCat(header) {
 
 // ── Help Assistant — fully offline, keyword-matched against Nyxon's own docs ──
 const helpFAQ = [
-  { keys: ['pro','upgrade','license','key','buy','purchase','price','cost'],
-    a: `Nyxon Pro is a one-time GH₵17 payment — no subscription. Click "Upgrade to Pro" in the sidebar, or on any locked automation, to activate a license key. Don't have one yet? <a href="#" onclick="window.open('https://nyxon-server.onrender.com/pro');return false;">Get Nyxon Pro →</a>` },
-  { keys: ['lost','lose','disappeared','restart','reboot','pro stopped','not pro anymore'],
-    a: `If Nyxon shows Free right after restarting your PC, it's usually because your license check couldn't reach the server yet (Wi-Fi/network isn't ready in the first few seconds after boot). It should recover automatically within a few seconds once you're online — your license isn't actually lost.` },
+  { keys: ['pro','upgrade','license','key','buy','purchase','price','cost','free'],
+    a: `Nyxon Launcher is completely free — every automation, no license key, no payment required.` },
   { keys: ['organize','organizer','sort files','file organizer'],
     a: `File Organizer sorts files in a folder you choose into labeled subfolders by type (Images, Documents, Videos, etc). It always asks for confirmation before moving anything, and you can undo the last run from Settings → "Undo last File Organize."` },
   { keys: ['rename','renamer','bulk rename'],
@@ -2020,7 +1993,7 @@ const helpFAQ = [
     a: `For anything I can't answer, use "Contact Nyxon" in the Business category — it goes directly to the Nyxon team.` },
 ];
 
-const helpSuggestions = ['How do I get Pro?', 'Where are my files saved?', 'Is there a Mac version?', 'App is slow to open'];
+const helpSuggestions = ['What automations are included?', 'Where are my files saved?', 'Is there a Mac version?', 'App is slow to open'];
 
 function findHelpAnswer(question) {
   const q = question.toLowerCase();
@@ -3628,75 +3601,6 @@ async function previewScrape() {
   btn.textContent = 'Preview →'; btn.disabled = false;
 }
 
-// ── License ───────────────────────────────────────────────────────────────────
-async function initLicense() {
-  if (window.nexus) { const r = await window.nexus.checkLicense(); isPro = r?.active === true; }
-  updateLicenseUI();
-}
-
-function updateLicenseUI() {
-  const tier = document.getElementById('sidebar-tier');
-  const wrap = document.getElementById('sidebar-upgrade-wrap');
-  const btn  = document.getElementById('settings-upgrade-btn');
-  const sub  = document.getElementById('settings-license-sub');
-  if (isPro) {
-    tier.textContent = 'Pro'; tier.className = 'tier-badge pro';
-    if (wrap) wrap.style.display = 'none';
-    if (btn)  { btn.textContent = '✓ Active'; btn.disabled = true; }
-    if (sub)  sub.textContent = 'Nyxon Pro — all features unlocked';
-  }
-  renderDashboard();
-}
-
-function showUpgradeModal() {
-  return new Promise((resolve) => {
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.innerHTML = `
-      <div class="modal" style="width:460px;">
-        <div class="modal-title" style="background:linear-gradient(135deg,#a78bfa,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">⭐ Nyxon Pro</div>
-        <div class="modal-sub">Unlock all automations with a one-time license key.</div>
-        <div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:12px;padding:14px 16px;margin-bottom:18px;">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(167,139,250,0.6);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px;">Pro includes:</div>
-          ${['Bulk Renamer','Auto Backup (Local + Google Drive + Dropbox)','Daily Digest','Deploy Script','Launch Workspace','Company Assessment','Duplicate Detector','Startup Manager','Auto Form Filler'].map(f=>
-            `<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(240,240,255,0.8);padding:4px 0;border-bottom:1px solid rgba(124,58,237,0.1);">
-              <span style="color:#a78bfa;font-weight:700;">✓</span>${f}
-            </div>`).join('')}
-        </div>
-        <label class="modal-label">Enter your license key</label>
-        <input class="modal-input" id="lic-key" type="text" placeholder="NYX-XXXXXX-XXXXXX-XXXXXX" style="text-transform:uppercase;letter-spacing:0.1em;font-size:14px;"/>
-        <div id="lic-error" style="font-family:'DM Mono',monospace;font-size:11px;color:#f87171;margin-top:-10px;margin-bottom:14px;display:none;"></div>
-        <div class="modal-row">
-          <button class="modal-btn cancel" id="lic-cancel">Cancel</button>
-          <button class="modal-btn confirm" id="lic-activate">Activate Pro →</button>
-        </div>
-        <div style="text-align:center;margin-top:14px;font-family:'DM Mono',monospace;font-size:10px;color:rgba(240,240,255,0.3);">
-          Don't have a key? <span style="color:#a78bfa;cursor:pointer;" onclick="window.open('https://nyxon-server.onrender.com/pro')">Get Nyxon Pro →</span>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    const input = overlay.querySelector('#lic-key');
-    const errorEl = overlay.querySelector('#lic-error');
-    const activBtn = overlay.querySelector('#lic-activate');
-    input.focus();
-    overlay.querySelector('#lic-cancel').onclick = () => { overlay.remove(); resolve(false); };
-    activBtn.onclick = async () => {
-      const key = input.value.trim();
-      if (!key) { errorEl.textContent='Please enter a key.'; errorEl.style.display='block'; return; }
-      activBtn.textContent='Activating…'; activBtn.disabled=true; errorEl.style.display='none';
-      const result = await window.nexus?.activateLicense(key);
-      if (result?.success) {
-        overlay.remove(); isPro=true; updateLicenseUI(); renderDashboard();
-        addLog('Nyxon Pro activated ✓','success'); showToast('Nyxon Pro unlocked! 🎉','success'); resolve(true);
-      } else {
-        errorEl.textContent=result?.error||'Activation failed.'; errorEl.style.display='block';
-        activBtn.textContent='Activate Pro →'; activBtn.disabled=false;
-      }
-    };
-    input.addEventListener('keydown', e=>{ if(e.key==='Enter') activBtn.click(); if(e.key==='Escape') overlay.querySelector('#lic-cancel').click(); });
-  });
-}
-
 // ── Launch ────────────────────────────────────────────────────────────────────
 function finishCard(id, auto, success) {
   const card  = document.querySelector(`.auto-card[data-id="${id}"]`);
@@ -3720,7 +3624,6 @@ function finishCard(id, auto, success) {
 
 async function launch(id) {
   if (running.has(id)) return;
-  if (PRO_AUTOMATIONS.has(id) && !isPro) { await showUpgradeModal(); return; }
   running.add(id);
   const auto  = automations.find(a=>a.id===id);
   const card  = document.querySelector(`.auto-card[data-id="${id}"]`);
@@ -3838,9 +3741,8 @@ const ONBOARDING_KEY = 'nyxon-onboarding-complete';
 const automationStats = getAutomationStats();
 const onboardingSlides = [
   {icon:'🌑',title:'Welcome to <span>NYXON</span>',type:'welcome',body:'Nyxon is a desktop automation launcher.\nBuilt to save you time — every single day.\n\nRun powerful automations with one click.'},
-  {icon:'⚡',title:'Your <span>automations</span>',type:'tour',body:`${automationStats.total} built-in automations across ${automationStats.categories} categories.\nEach one does real work on your system — no coding required.`},
-  {icon:'🔓',titlipce:'Free vs <span>Pro</span>',type:'pro',body:'Some automations are free forever.\nPro features unlock the full power of Nyxon\nwith a one-time payment of GH₵17.'},
-  {icon:'🚀',title:"You're all <span>set</span>",type:'done',body:"Use the sidebar to navigate categories.\nClick any card to launch an automation.\nClick 🔒 on a Pro card to unlock it."}
+  {icon:'⚡',title:'Your <span>automations</span>',type:'tour',body:`${automationStats.total} built-in automations across ${automationStats.categories} categories.\nEach one does real work on your system — no coding required.\n\nAll of them, completely free.`},
+  {icon:'🚀',title:"You're all <span>set</span>",type:'done',body:"Use the sidebar to navigate categories.\nClick any card to launch an automation."}
 ];
 let currentSlide=0;
 function shouldShowOnboarding(){return localStorage.getItem(ONBOARDING_KEY)!=='true';}
@@ -3854,8 +3756,7 @@ function renderSlide(index){
   document.getElementById('ob-title').innerHTML=slide.title;
   document.getElementById('ob-body').innerHTML=slide.body.replace(/\n/g,'<br/>');
   const featuresEl=document.getElementById('ob-features');
-  if(slide.type==='tour'){featuresEl.style.display='grid';featuresEl.innerHTML=[{icon:'🗂',name:'File Organizer',tier:'free'},{icon:'⚙',name:'System Flush',tier:'free'},{icon:'📡',name:'Internet Checker',tier:'free'},{icon:'✏',name:'Bulk Renamer',tier:'pro'},{icon:'🛡',name:'Auto Backup',tier:'pro'},{icon:'✉',name:'Daily Digest',tier:'pro'},{icon:'⟩_',name:'Deploy Script',tier:'pro'},{icon:'🌐',name:'Workspace',tier:'pro'}].map(f=>`<div class="ob-feature"><span>${f.icon}</span><span>${f.name}</span><span class="ob-badge ${f.tier}">${f.tier.toUpperCase()}</span></div>`).join('');}
-  else if(slide.type==='pro'){featuresEl.style.display='grid';featuresEl.innerHTML=`<div class="ob-feature" style="grid-column:1/-1;"><span>🆓</span><div><div style="font-weight:700;">Free forever</div><div style="font-family:'DM Mono',monospace;font-size:10px;opacity:0.5;">File Organizer, System Flush, Internet Checker + more</div></div><span class="ob-badge free" style="margin-left:auto;">FREE</span></div><div class="ob-feature" style="grid-column:1/-1;"><span>⭐</span><div><div style="font-weight:700;">Nyxon Pro — GH₵17</div><div style="font-family:'DM Mono',monospace;font-size:10px;opacity:0.5;">Bulk Renamer, Backup, Digest, Deploy, Workspace + more</div></div><span class="ob-badge pro" style="margin-left:auto;">PRO</span></div>`;}
+  if(slide.type==='tour'){featuresEl.style.display='grid';featuresEl.innerHTML=[{icon:'🗂',name:'File Organizer'},{icon:'⚙',name:'System Flush'},{icon:'📡',name:'Internet Checker'},{icon:'✏',name:'Bulk Renamer'},{icon:'🛡',name:'Auto Backup'},{icon:'✉',name:'Daily Digest'},{icon:'⟩_',name:'Deploy Script'},{icon:'🌐',name:'Workspace'}].map(f=>`<div class="ob-feature"><span>${f.icon}</span><span>${f.name}</span></div>`).join('');}
   else {featuresEl.style.display='none';}
   document.getElementById('ob-back').style.display=isFirst?'none':'block';
   document.getElementById('ob-skip').style.display=isLast?'none':'block';
@@ -3950,7 +3851,6 @@ document.addEventListener('keydown', (e) => {
 initTheme();
 initSettings();
 renderDashboard();
-initLicense();
 addLog('Nyxon Launcher initialised.','info');
 addLog(`${automationStats.total} automations across ${automationStats.categories} categories ready.`,'info');
 if(shouldShowOnboarding()) setTimeout(showOnboarding,600);

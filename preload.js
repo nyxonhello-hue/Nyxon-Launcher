@@ -16,8 +16,6 @@ contextBridge.exposeInMainWorld('nexus', {
   deleteWorkspace:  (name) => ipcRenderer.invoke('delete-workspace', name),
   runFeedback:      (data) => ipcRenderer.invoke('run-feedback', data),
   runContact:       (data) => ipcRenderer.invoke('run-contact', data),
-  activateLicense: (key) => ipcRenderer.invoke('activate-license', key),
-  checkLicense: () => ipcRenderer.invoke('check-license'),
   gdriveAuthUrl:  () => ipcRenderer.invoke('gdrive-auth-url'),
   gdriveExchange: (code) => ipcRenderer.invoke('gdrive-exchange', code),
   gdriveStatus:   () => ipcRenderer.invoke('gdrive-status'),

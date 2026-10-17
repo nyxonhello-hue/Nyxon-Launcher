@@ -3,63 +3,6 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 
-// ─── Pro license gate ──────────────────────────────────────────────────────────
-// The renderer's UI only *hides* Pro features from Free users — it never
-// enforced who's allowed to call the underlying IPC handlers. Any script
-// running in the renderer (including one injected via XSS) could previously
-// invoke Pro handlers directly through window.nexus and get full Pro
-// functionality without a license. This closes that gap at the IPC layer,
-// which is the only place enforcement actually matters.
-//
-// Note: this checks the locally cached license.json, so it's fast and works
-// offline. It stops the "call the IPC channel directly" bypass, but it can't
-// stop someone with real filesystem access to their own machine from hand-
-// editing license.json — no offline license check can fully prevent that.
-function isLocalLicensePro() {
-  try {
-    const licenseFile = path.join(app.getPath('userData'), 'license.json');
-    if (!fs.existsSync(licenseFile)) return false;
-    const data = JSON.parse(fs.readFileSync(licenseFile, 'utf8'));
-    return !!data.key && data.tier === 'pro';
-  } catch (_) {
-    return false;
-  }
-}
-
-const PRO_IPC_CHANNELS = new Set([
-  // Bulk Renamer, Auto Backup, Duplicate Detector
-  'run-bulk-renamer', 'run-backup', 'run-duplicate-detector',
-  // Daily Digest, Deploy Script, Startup Manager, Auto Software Updater
-  'run-daily-digest', 'run-script', 'run-startup-manager', 'open-startup-settings', 'run-software-updater',
-  // Launch Workspace
-  'run-open-urls', 'save-workspace', 'delete-workspace',
-  // Company Assessment, Web Scraper
-  'run-assessment', 'run-web-scraper',
-  // Convert/compress/split/merge/protect file tools
-  'run-pdf-to-image', 'run-image-to-pdf', 'run-compressor', 'run-invoice', 'run-file-splitter',
-  'run-media-converter', 'run-video-compressor', 'run-pdf-merge', 'run-pdf-protect', 'run-image-to-text',
-  // Expense Tracker
-  'get-expenses', 'add-expense', 'delete-expense', 'export-expenses',
-  // Clipboard History
-  'get-clipboard-history', 'toggle-clipboard-watching', 'copy-clipboard-entry',
-  'pin-clipboard-entry', 'delete-clipboard-entry', 'clear-clipboard-history',
-  // App Uninstaller Helper
-  'list-installed-apps', 'uninstall-app',
-  // Large File Finder
-  'run-large-file-finder', 'open-file-location', 'delete-large-file',
-]);
-
-const _ipcHandle = ipcMain.handle.bind(ipcMain);
-ipcMain.handle = (channel, listener) => {
-  if (!PRO_IPC_CHANNELS.has(channel)) return _ipcHandle(channel, listener);
-  return _ipcHandle(channel, async (event, ...args) => {
-    if (!isLocalLicensePro()) {
-      return { success: false, error: 'This automation requires Nyxon Pro.', licenseRequired: true };
-    }
-    return listener(event, ...args);
-  });
-};
-
 // ─── Polyfill for undici/Web APIs ─────────────────────────────────────────────
 // Fix "File is not defined" error from undici in main process
 if (typeof global.File === 'undefined') {
@@ -118,7 +61,6 @@ if (require('electron-squirrel-startup')) app.quit();
 ipcMain.handle('uninstall-cleanup', async () => {
   const userDataPath = app.getPath('userData');
   const filesToRemove = [
-    'license.json',
     'cloud-tokens.json',
     'workspaces.json',
   ];
@@ -1375,136 +1317,6 @@ async function sendToNyxon(payload, log) {
     req.end();
   });
 }
-// ─── License Activation ───────────────────────────────────────────────────────
-ipcMain.handle('activate-license', async (_, key) => {
-  const https = require('https');
-
-  return new Promise((resolve) => {
-    const payload = JSON.stringify({ key: key.trim().toUpperCase() });
-    const options = {
-      hostname: 'nyxon-server.onrender.com',
-      path: '/api/activate',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload)
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const result = JSON.parse(data);
-                    if (result.success) {
-            const licenseFile = path.join(app.getPath('userData'), 'license.json');
-            fs.writeFileSync(licenseFile, JSON.stringify({
-              key: result.key,
-              tier: result.tier,
-              activatedAt: result.activatedAt,
-              lastVerifiedAt: Date.now()
-            }));
-          }
-          resolve(result);
-        } catch {
-          resolve({ success: false, error: 'Server error.' });
-        }
-      });
-    });
-
-    req.on('error', () => resolve({ success: false, error: 'Could not reach Nyxon server.' }));
-    req.write(payload);
-    req.end();
-  });
-});
-
-// Check license on startup
-ipcMain.handle('check-license', async () => {
-  try {
-    const licenseFile = path.join(app.getPath('userData'), 'license.json');
-
-    if (!fs.existsSync(licenseFile)) {
-      return { active: false, tier: 'free' };
-    }
-
-    const data = JSON.parse(fs.readFileSync(licenseFile, 'utf8'));
-
-    if (!data.key || data.tier !== 'pro') {
-      return { active: false, tier: 'free' };
-    }
-
-    // Re-verify with server on every launch
-    const result = await new Promise((resolve) => {
-      const https = require('https');
-      const payload = JSON.stringify({ key: data.key });
-      const options = {
-        hostname: 'nyxon-server.onrender.com',
-        path: '/api/verify-license',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(payload)
-        }
-      };
-
-      const req = https.request(options, (res) => {
-        let body = '';
-        res.on('data', chunk => body += chunk);
-        res.on('end', () => {
-          // reachable:true means the server actually answered — its answer
-          // (valid/invalid) can be trusted. A parse failure means it answered
-          // with garbage, which we treat like "couldn't reach it" below.
-          try { resolve({ ...JSON.parse(body), reachable: true }); }
-          catch { resolve({ valid: false, reachable: false, reason: 'Bad response from server.' }); }
-        });
-      });
-
-      // Network error or timeout ≠ "license is invalid" — it just means we
-      // don't know. Don't conflate the two like before.
-      req.on('error', () => resolve({ valid: false, reachable: false, reason: 'Could not reach license server.' }));
-      req.setTimeout(5000, () => {
-        req.destroy();
-        resolve({ valid: false, reachable: false, reason: 'License server timed out.' });
-      });
-
-      req.write(payload);
-      req.end();
-    });
-
-    if (result.reachable && !result.valid) {
-      // Server was reachable and explicitly said this key is invalid/revoked
-      // — trust that immediately.
-      fs.unlinkSync(licenseFile);
-      addLog?.('License verification failed — reverted to Free.', 'error');
-      return { active: false, tier: 'free' };
-    }
-
-    if (!result.reachable) {
-      // Couldn't reach the server at all — offline, or DNS/network not up
-      // yet right after a reboot. Don't punish the user for that: stay Pro
-      // as long as we verified successfully within the last 7 days.
-      const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
-      const withinGracePeriod = (Date.now() - (data.lastVerifiedAt || 0)) < GRACE_PERIOD_MS;
-      if (withinGracePeriod) {
-        return { active: true, tier: 'pro' };
-      }
-      // Grace period expired and still unreachable — fall back to Free for
-      // now, but keep the file so it recovers automatically once the
-      // server is reachable again (nothing gets deleted here).
-      return { active: false, tier: 'free' };
-    }
-
-    // Reachable and valid — refresh the verification timestamp.
-    data.lastVerifiedAt = Date.now();
-    fs.writeFileSync(licenseFile, JSON.stringify(data));
-    return { active: true, tier: 'pro' };
-
-  } catch (_) {
-    return { active: false, tier: 'free' };
-  }
-});
-
 // ─── Cloud Backup Handlers ────────────────────────────────────────────────────
 const TOKENS_FILE = () => path.join(app.getPath('userData'), 'cloud-tokens.json');
 
